@@ -176,31 +176,38 @@
 </head>
 <body>
     <div class="chess-container">
+        
+        <div class="flex justify-end w-full mb-3">
+            <select id="language-select" class="p-1 border border-gray-300 rounded text-sm bg-white shadow-sm">
+                <option value="vi">🇻🇳 Tiếng Việt</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="zh">🇨🇳 中文 (Simplified)</option>
+            </select>
+        </div>
         <div class="text-center mb-4">
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Cờ Tướng 2D</h1>
-            <p id="status" class="text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block bg-yellow-100 text-yellow-700 shadow-md">Lượt của Đỏ (Người chơi)</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800" data-i18n="gameTitle">Cờ Tướng 2D</h1>
+            <p id="status" class="text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block bg-yellow-100 text-yellow-700 shadow-md"></p>
         </div>
 
         <div class="board" id="board">
-            <div class="river"><span class="river-text">Sông Hà</span></div>
-            
-            </div>
+            <div class="river"><span class="river-text" data-i18n="riverName">Sông Hà</span></div>
+        </div>
 
         <div class="mt-4 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 w-full">
-            <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
+            <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base" data-i18n="resetButton">
                 Chơi Lại
             </button>
-            <button id="donate-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
+            <button id="donate-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base" data-i18n="donateButton">
                 Ủng hộ 1 Pi
             </button>
         </div>
         
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div class="bg-white p-6 rounded-xl shadow-2xl max-w-xs w-full">
-                <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800">Thông báo</h3>
+                <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800" data-i18n="modalTitle">Thông báo</h3>
                 <div id="modal-content" class="text-gray-700 mb-4 text-sm break-words overflow-y-auto max-h-64"></div>
-                <button id="modal-custom-action" class="hidden w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mb-3"></button>
-                <button id="modal-close" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">Đóng</button>
+                <button id="modal-custom-action" class="hidden w-full text-white font-bold py-2 px-4 rounded-lg transition duration-200 mb-3"></button>
+                <button id="modal-close" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200" data-i18n="closeButton">Đóng</button>
             </div>
         </div>
     </div>
@@ -217,6 +224,7 @@
         const statusElement = document.getElementById('status');
         const resetButton = document.getElementById('reset-button');
         const donateButton = document.getElementById('donate-button');
+        const languageSelect = document.getElementById('language-select');
 
         const modalElement = document.getElementById('message-modal');
         const modalTitleElement = document.getElementById('modal-title');
@@ -225,7 +233,169 @@
         const modalCustomButton = document.getElementById('modal-custom-action'); 
         
         const BOARD_SIZE = 90; // 9 cột x 10 hàng
+
+        // Dữ liệu ngôn ngữ (THÊM MỚI)
+        const translations = {
+            'vi': {
+                gameTitle: 'Cờ Tướng 2D',
+                riverName: 'Sông Hà',
+                resetButton: 'Chơi Lại',
+                donateButton: 'Ủng hộ 1 Pi',
+                modalTitle: 'Thông báo',
+                closeButton: 'Đóng',
+                // Trạng thái game
+                statusRedTurn: 'Lượt của Đỏ (Người chơi)',
+                statusBlackTurn: 'Lượt của Đen (Máy tính)',
+                winRed: 'Đỏ (Người chơi)',
+                winBlack: 'Đen (Máy tính)',
+                winMessage: (winner) => `${winner} đã thắng! Nhấn Chơi Lại.`,
+                drawMessage: 'Hòa cờ. Máy tính không còn nước đi.',
+                // Modal ủng hộ
+                donateTitle: 'Ủng hộ Nhà phát triển',
+                donateContent: (address) => `
+                    <p class="mb-3">
+                        Để ủng hộ <b>1 Pi</b>, vui lòng thực hiện thủ công các bước sau:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-2 text-left px-2">
+                        <li>Nhấn vào địa chỉ ví để <b>sao chép</b>.</li>
+                        <li>Mở Pi Wallet và dán địa chỉ đã sao chép.</li>
+                        <li>Nhập số lượng: <b>1 Pi</b>.</li>
+                        <li>Nhập Ghi chú (Memo): <b>Ủng hộ game Cờ Tướng</b> (Tùy chọn).</li>
+                    </ol>
+                    <p class="mt-4 mb-2 text-sm font-semibold">
+                        Địa chỉ Ví nhận Pi (Nhấp để Sao chép):
+                    </p>
+                    <div id="wallet-copy-area" 
+                         class="wallet-address-copy bg-gray-100 p-3 rounded-lg text-xs font-mono break-all font-semibold text-green-700 hover:bg-gray-200 transition duration-150">
+                        ${address}
+                        <span class="copy-icon">📋</span>
+                    </div>
+                `,
+                donateButtonAction: 'Mở Pi Wallet (wallet.pinet.com)',
+                copySuccess: 'Đã sao chép! ✅',
+            },
+            'en': {
+                gameTitle: 'Chinese Chess 2D',
+                riverName: 'River (Chu River & Han Border)',
+                resetButton: 'Reset Game',
+                donateButton: 'Donate 1 Pi',
+                modalTitle: 'Notification',
+                closeButton: 'Close',
+                // Game status
+                statusRedTurn: "Red's Turn (Player)",
+                statusBlackTurn: "Black's Turn (AI)",
+                winRed: 'Red (Player)',
+                winBlack: 'Black (AI)',
+                winMessage: (winner) => `${winner} wins! Click Reset Game.`,
+                drawMessage: 'Draw. AI has no legal moves.',
+                // Donate Modal
+                donateTitle: 'Support the Developer',
+                donateContent: (address) => `
+                    <p class="mb-3">
+                        To donate <b>1 Pi</b>, please follow these steps manually:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-2 text-left px-2">
+                        <li>Click the wallet address to <b>copy</b>.</li>
+                        <li>Open Pi Wallet and paste the copied address.</li>
+                        <li>Enter amount: <b>1 Pi</b>.</li>
+                        <li>Enter Memo: <b>XianQi Game Support</b> (Optional).</li>
+                    </ol>
+                    <p class="mt-4 mb-2 text-sm font-semibold">
+                        Recipient Pi Wallet Address (Click to Copy):
+                    </p>
+                    <div id="wallet-copy-area" 
+                         class="wallet-address-copy bg-gray-100 p-3 rounded-lg text-xs font-mono break-all font-semibold text-green-700 hover:bg-gray-200 transition duration-150">
+                        ${address}
+                        <span class="copy-icon">📋</span>
+                    </div>
+                `,
+                donateButtonAction: 'Open Pi Wallet (wallet.pinet.com)',
+                copySuccess: 'Copied! ✅',
+            },
+            'zh': {
+                gameTitle: '象棋 2D',
+                riverName: '楚河汉界',
+                resetButton: '重新开始',
+                donateButton: '捐赠 1 Pi',
+                modalTitle: '通知',
+                closeButton: '关闭',
+                // Game status
+                statusRedTurn: '红方回合 (玩家)',
+                statusBlackTurn: '黑方回合 (电脑)',
+                winRed: '红方 (玩家)',
+                winBlack: '黑方 (电脑)',
+                winMessage: (winner) => `${winner} 获胜! 请点击重新开始。`,
+                drawMessage: '和局。电脑无合法棋步。',
+                // Donate Modal
+                donateTitle: '支持开发者',
+                donateContent: (address) => `
+                    <p class="mb-3">
+                        要捐赠 <b>1 Pi</b>, 请手动遵循以下步骤:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-2 text-left px-2">
+                        <li>点击钱包地址以<b>复制</b>。</li>
+                        <li>打开 Pi 钱包并粘贴地址。</li>
+                        <li>输入数量: <b>1 Pi</b>。</li>
+                        <li>输入备注: <b>象棋游戏支持</b> (可选)。</li>
+                    </ol>
+                    <p class="mt-4 mb-2 text-sm font-semibold">
+                        收款 Pi 钱包地址 (点击复制):
+                    </p>
+                    <div id="wallet-copy-area" 
+                         class="wallet-address-copy bg-gray-100 p-3 rounded-lg text-xs font-mono break-all font-semibold text-green-700 hover:bg-gray-200 transition duration-150">
+                        ${address}
+                        <span class="copy-icon">📋</span>
+                    </div>
+                `,
+                donateButtonAction: '打开 Pi 钱包 (wallet.pinet.com)',
+                copySuccess: '已复制! ✅',
+            }
+        };
+
+        // Biến ngôn ngữ hiện tại
+        let currentLang = localStorage.getItem('lang') || 'vi'; 
+        languageSelect.value = currentLang;
+
+        // Hàm dịch thuật (THÊM MỚI)
+        const t = (key) => {
+            const translation = translations[currentLang];
+            if (translation && translation[key]) {
+                return translation[key];
+            }
+            // Fallback về tiếng Việt nếu không tìm thấy key
+            return translations['vi'][key] || key; 
+        };
         
+        // Hàm áp dụng ngôn ngữ (THÊM MỚI)
+        const applyLanguage = (lang) => {
+            currentLang = lang;
+            localStorage.setItem('lang', lang);
+            
+            // 1. Dịch các phần tử có data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (key) {
+                    element.textContent = t(key);
+                }
+            });
+
+            // 2. Cập nhật trạng thái game (vì nó không dùng data-i18n)
+            // Cần chạy lại switchTurn hoặc initializeGame
+            if (currentPlayer === 'red') {
+                updateStatus(t('statusRedTurn'), 'bg-red-100 text-red-700');
+            } else {
+                updateStatus(t('statusBlackTurn'), 'bg-gray-100 text-gray-700');
+            }
+
+            // 3. Cập nhật tiêu đề trang
+            document.title = t('gameTitle');
+        };
+
+        // Gắn sự kiện thay đổi ngôn ngữ (THÊM MỚI)
+        languageSelect.addEventListener('change', (e) => {
+            applyLanguage(e.target.value);
+        });
+
         const INITIAL_BOARD = [
             // Đen (Top)
             { piece: 'Xe', color: 'black', pos: 0 }, { piece: 'Mã', color: 'black', pos: 1 }, { piece: 'Tượng', color: 'black', pos: 2 }, { piece: 'Sĩ', color: 'black', pos: 3 }, { piece: 'Tướng', color: 'black', pos: 4 }, { piece: 'Sĩ', color: 'black', pos: 5 }, { piece: 'Tượng', color: 'black', pos: 6 }, { piece: 'Mã', color: 'black', pos: 7 }, { piece: 'Xe', color: 'black', pos: 8 },
@@ -265,19 +435,15 @@
                 // Hiển thị thông báo nhỏ trên nút tùy chỉnh
                 const targetButton = modalCustomButton.classList.contains('hidden') ? modalCloseButton : modalCustomButton;
                 const originalContent = targetButton.textContent;
+                const originalClass = targetButton.className;
 
-                targetButton.textContent = 'Đã sao chép! ✅';
+                targetButton.textContent = t('copySuccess');
                 targetButton.classList.remove('bg-indigo-500', 'bg-blue-500');
                 targetButton.classList.add('bg-green-600');
                 
                 setTimeout(() => {
                     targetButton.textContent = originalContent;
-                    targetButton.classList.remove('bg-green-600');
-                    if (targetButton === modalCustomButton) {
-                        targetButton.classList.add('bg-indigo-500');
-                    } else {
-                        targetButton.classList.add('bg-blue-500');
-                    }
+                    targetButton.className = originalClass;
                 }, 1500);
             }).catch(err => {
                 console.error('Không thể sao chép', err);
@@ -320,27 +486,27 @@
         // Lấy quân cờ tại vị trí
         const getPieceAt = (pos) => boardState.find(p => p.pos === pos);
 
-        // Cập nhật trạng thái trò chơi trên UI
+        // Cập nhật trạng thái trò chơi trên UI (SỬA ĐỔI)
         const updateStatus = (message, colorClass) => {
             statusElement.textContent = message;
             statusElement.className = `text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block shadow-md ${colorClass}`;
         }
         
-        // Hiển thị thông báo chiến thắng
+        // Hiển thị thông báo chiến thắng (SỬA ĐỔI)
         const showWinMessage = (winner) => {
-            const winnerName = winner === 'red' ? 'Đỏ (Người chơi)' : 'Đen (Máy tính)';
-            const message = `${winnerName} đã thắng! Nhấn Chơi Lại.`;
+            const winnerName = winner === 'red' ? t('winRed') : t('winBlack');
+            const message = t('winMessage')(winnerName);
             updateStatus(message, winner === 'red' ? 'bg-red-200 text-red-800' : 'bg-gray-700 text-white');
             // Vô hiệu hóa tương tác
             selectedPiece = true; 
         }
 
-        // Đổi lượt chơi và kiểm tra nếu là lượt AI
+        // Đổi lượt chơi và kiểm tra nếu là lượt AI (SỬA ĐỔI)
         const switchTurn = () => {
             currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
-            const colorName = currentPlayer === 'red' ? 'Đỏ (Người chơi)' : 'Đen (Máy tính)';
+            const statusMessage = currentPlayer === 'red' ? t('statusRedTurn') : t('statusBlackTurn');
             const colorClass = currentPlayer === 'red' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700';
-            updateStatus(`Lượt của ${colorName}`, colorClass);
+            updateStatus(statusMessage, colorClass);
             
             // Nếu là lượt của AI
             if (currentPlayer === 'black') {
@@ -584,7 +750,7 @@
             }
             
             if (moveSet.length === 0) {
-                updateStatus('Hòa cờ. Máy tính không còn nước đi.', 'bg-yellow-200 text-yellow-800');
+                updateStatus(t('drawMessage'), 'bg-yellow-200 text-yellow-800');
                 isAITurn = false;
                 selectedPiece = true; 
                 return;
@@ -623,33 +789,14 @@
 
 
         // ----------------------------------------------------
-        // Logic Ủng hộ (Chuyển sang Ví Pi)
+        // Logic Ủng hộ (Chuyển sang Ví Pi) (SỬA ĐỔI)
         // ----------------------------------------------------
 
         const initiatePiPayment = () => {
-            const content = `
-                <p class="mb-3">
-                    Để ủng hộ <b>1 Pi</b>, vui lòng thực hiện thủ công các bước sau:
-                </p>
-                <ol class="list-decimal list-inside space-y-2 text-left px-2">
-                    <li>Nhấn vào địa chỉ ví để <b>sao chép</b>.</li>
-                    <li>Mở Pi Wallet và dán địa chỉ đã sao chép.</li>
-                    <li>Nhập số lượng: <b>1 Pi</b>.</li>
-                    <li>Nhập Ghi chú (Memo): <b>Ủng hộ game Cờ Tướng</b> (Tùy chọn).</li>
-                </ol>
-
-                <p class="mt-4 mb-2 text-sm font-semibold">
-                    Địa chỉ Ví nhận Pi (Nhấp để Sao chép):
-                </p>
-                <div id="wallet-copy-area" 
-                     class="wallet-address-copy bg-gray-100 p-3 rounded-lg text-xs font-mono break-all font-semibold text-green-700 hover:bg-gray-200 transition duration-150">
-                    ${PI_WALLET_ADDRESS}
-                    <span class="copy-icon">📋</span>
-                </div>
-            `;
+            const content = t('donateContent')(PI_WALLET_ADDRESS);
             
             const customButton = {
-                text: 'Mở Pi Wallet (wallet.pinet.com)',
+                text: t('donateButtonAction'),
                 action: () => {
                     // Chuyển hướng đến Pi Wallet
                     window.open('https://wallet.pinet.com/', '_blank');
@@ -659,7 +806,7 @@
             };
 
             // Hiển thị modal hướng dẫn và nút Mở Ví
-            displayMessage('Ủng hộ Nhà phát triển', content, customButton);
+            displayMessage(t('donateTitle'), content, customButton);
             
             // Gắn sự kiện copy sau khi modal được hiển thị 
             setTimeout(() => {
@@ -726,6 +873,7 @@
                 });
             }
             
+            // Đảm bảo Sông luôn nằm trên cùng (để không bị đè lên quân cờ)
             const river = boardElement.querySelector('.river');
             if (river) boardElement.appendChild(river);
         };
@@ -789,14 +937,17 @@
             }
         };
 
-        // Khởi tạo trạng thái trò chơi
+        // Khởi tạo trạng thái trò chơi (SỬA ĐỔI)
         const initializeGame = () => {
             // Sao chép sâu mảng ban đầu
             boardState = INITIAL_BOARD.map(p => ({ ...p }));
             selectedPiece = null;
             currentPlayer = 'red';
             isAITurn = false;
-            updateStatus('Lượt của Đỏ (Người chơi)', 'bg-red-100 text-red-700');
+            
+            // Cập nhật ngôn ngữ và trạng thái
+            applyLanguage(currentLang);
+            updateStatus(t('statusRedTurn'), 'bg-red-100 text-red-700');
             renderBoard();
         };
 
