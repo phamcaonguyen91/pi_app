@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ Tướng 2D - Mobile Friendly</title>
+    <!-- Tải Tailwind CSS để đơn giản hóa việc tạo giao diện hiện đại và responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Thiết lập font cho các quân cờ bằng Unicode/Emoji, đảm bảo hiển thị đẹp và sắc nét */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            /* Thay đổi để căn giữa và sử dụng toàn bộ không gian màn hình */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Bắt đầu từ trên xuống */
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .chess-container {
+            background-color: #fff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 15px; /* Giảm padding cho mobile */
+            max-width: 95vw;
+            width: 450px; /* Chiều rộng tối đa */
+        }
+
+        .board {
+            display: grid;
+            /* Bàn cờ Cờ Tướng có 9 cột và 10 hàng */
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            width: 100%;
+            aspect-ratio: 9 / 10; /* Giữ tỷ lệ chuẩn 9x10 */
+            background: #d4a373; /* Màu gỗ nhạt */
+            border: 5px solid #6f4c3b;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .square {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        /* Vẽ các đường kẻ ngang và dọc */
+        .square:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 1px solid #6f4c3b;
+            box-sizing: border-box;
+            z-index: -1;
+        }
+
+        /* Xóa đường kẻ bên trong, chỉ giữ lại đường kẻ ô */
+        .square:not(:nth-child(9n)):before { border-right: none; }
+        .square:nth-child(n+1):nth-child(-n+9):before { border-top: none; }
+        .square:nth-last-child(n+1):nth-last-child(-n+9):before { border-bottom: none; }
+        .square:nth-child(9n):before { border-right: none; }
+        
+        /* Xóa đường kẻ giữa sông */
+        .square:nth-child(n + 37):nth-child( -n + 45):before { border-bottom: none; } /* Hàng 4 */
+        .square:nth-child(n + 46):nth-child( -n + 54):before { border-top: none; } /* Hàng 5 */
+
+        /* Hiển thị Sông (River) */
+        .river {
+            position: absolute;
+            top: 45%;
+            left: 0;
+            width: 100%;
+            height: 10%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5vmin; /* Dùng vmin để co giãn theo màn hình */
+            font-weight: bold;
+            color: #6f4c3b;
+            background-color: #f7e0c4;
+            pointer-events: none;
+            z-index: 5;
+            text-shadow: 1px 1px 1px #fff;
+        }
+        .river-text {
+            /* Vị trí của Hà */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4vmin; /* Dùng vmin để co giãn theo màn hình */
+            color: #6f4c3b;
+            z-index: 10;
+        }
+
+        /* Quân cờ */
+        .piece {
+            width: 90%; /* Tăng kích thước quân cờ cho dễ chạm */
+            height: 90%;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5vmin; /* Dùng vmin để co giãn theo màn hình */
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s;
+        }
+
+        .red {
+            background-color: #fce8e8;
+            color: #c0392b;
+            border: 2px solid #c0392b;
+        }
+
+        .black {
+            background-color: #e8e8f2;
+            color: #2c3e50;
+            border: 2px solid #2c3e50;
+        }
+
+        /* Trạng thái */
+        .selected {
+            transform: scale(1.15); /* Tăng scale khi chọn cho dễ nhìn trên mobile */
+            box-shadow: 0 0 10px 4px #f39c12;
+            z-index: 20;
+        }
+
+        .highlight-move {
+            border: 4px dashed #27ae60;
+            background-color: rgba(39, 174, 96, 0.2);
+        }
+        
+        /* CSS cho Modal (thay thế cho alert) */
+        #message-modal {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            visibility: hidden;
+        }
+        #message-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <div class="chess-container">
+        <div class="text-center mb-4">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Cờ Tướng 2D</h1>
+            <p id="status" class="text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block bg-yellow-100 text-yellow-700 shadow-md">Lượt của Đỏ (Người chơi)</p>
+        </div>
+
+        <div class="board" id="board">
+            <!-- Sông (River) -->
+            <div class="river"><span class="river-text">Sông Hà</span></div>
+            
+            <!-- Các ô cờ sẽ được thêm bằng JavaScript -->
+        </div>
+
+        <div class="mt-4 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 w-full">
+            <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
+                Chơi Lại
+            </button>
+            <button id="donate-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
+                Ủng hộ 1 Pi
+            </button>
+        </div>
+        
+        <!-- Modal Thông báo (Thay thế cho alert()) -->
+        <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl max-w-xs w-full">
+                <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800">Thông báo</h3>
+                <div id="modal-content" class="text-gray-700 mb-4 text-sm break-words overflow-y-auto max-h-64"></div>
+                <button id="modal-close" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ----------------------------------------------------
+        // Cấu hình & Khởi tạo
+        // ----------------------------------------------------
+        
+        const PI_WALLET_ADDRESS = 'GBML46SIXNWSYMDJNHPA5CJ4LT65EBJF66HZ26VFPQ3R64EKB7EGYC2P';
+        
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        const resetButton = document.getElementById('reset-button');
+        const donateButton = document.getElementById('donate-button');
+
+        const modalElement = document.getElementById('message-modal');
+        const modalTitleElement = document.getElementById('modal-title');
+        const modalContentElement = document.getElementById('modal-content');
+        const modalCloseButton = document.getElementById('modal-close');
+        
+        const BOARD_SIZE = 90; // 9 cột x 10 hàng
+        
+        const INITIAL_BOARD = [
+            // Đen (Top)
+            { piece: 'Xe', color: 'black', pos: 0 }, { piece: 'Mã', color: 'black', pos: 1 }, { piece: 'Tượng', color: 'black', pos: 2 }, { piece: 'Sĩ', color: 'black', pos: 3 }, { piece: 'Tướng', color: 'black', pos: 4 }, { piece: 'Sĩ', color: 'black', pos: 5 }, { piece: 'Tượng', color: 'black', pos: 6 }, { piece: 'Mã', color: 'black', pos: 7 }, { piece: 'Xe', color: 'black', pos: 8 },
+            { piece: null, pos: 9 }, { piece: null, pos: 10 }, { piece: null, pos: 11 }, { piece: null, pos: 12 }, { piece: null, pos: 13 }, { piece: null, pos: 14 }, { piece: null, pos: 15 }, { piece: null, pos: 16 }, { piece: null, pos: 17 },
+            { piece: null, pos: 18 }, { piece: 'Pháo', color: 'black', pos: 19 }, { piece: null, pos: 20 }, { piece: null, pos: 21 }, { piece: null, pos: 22 }, { piece: null, pos: 23 }, { piece: null, pos: 24 }, { piece: 'Pháo', color: 'black', pos: 25 }, { piece: null, pos: 26 },
+            { piece: 'Tốt', color: 'black', pos: 27 }, { piece: null, pos: 28 }, { piece: 'Tốt', color: 'black', pos: 29 }, { piece: null, pos: 30 }, { piece: 'Tốt', color: 'black', pos: 31 }, { piece: null, pos: 32 }, { piece: 'Tốt', color: 'black', pos: 33 }, { piece: null, pos: 34 }, { piece: 'Tốt', color: 'black', pos: 35 },
+            // Sông (36 -> 53)
+            // Hàng trống (36 -> 44)
+            // Hàng trống (45 -> 53)
+            
+            // Đỏ (Bottom) - Bắt đầu từ 54
+            { piece: 'Tốt', color: 'red', pos: 54 }, { piece: null, pos: 55 }, { piece: 'Tốt', color: 'red', pos: 56 }, { piece: null, pos: 57 }, { piece: 'Tốt', color: 'red', pos: 58 }, { piece: null, pos: 59 }, { piece: 'Tốt', color: 'red', pos: 60 }, { piece: null, pos: 61 }, { piece: 'Tốt', color: 'red', pos: 62 },
+            { piece: null, pos: 63 }, { piece: null, pos: 64 }, { piece: null, pos: 65 }, { piece: null, pos: 66 }, { piece: null, pos: 67 }, { piece: null, pos: 68 }, { piece: null, pos: 69 }, { piece: null, pos: 70 }, { piece: null, pos: 71 },
+            { piece: null, pos: 72 }, { piece: 'Pháo', color: 'red', pos: 73 }, { piece: null, pos: 74 }, { piece: null, pos: 75 }, { piece: null, pos: 76 }, { piece: null, pos: 77 }, { piece: null, pos: 78 }, { piece: 'Pháo', color: 'red', pos: 79 }, { piece: null, pos: 80 },
+            { piece: 'Xe', color: 'red', pos: 81 }, { piece: 'Mã', color: 'red', pos: 82 }, { piece: 'Tượng', color: 'red', pos: 83 }, { piece: 'Sĩ', color: 'red', pos: 84 }, { piece: 'Tướng', color: 'red', pos: 85 }, { piece: 'Sĩ', color: 'red', pos: 86 }, { piece: 'Tượng', color: 'red', pos: 87 }, { piece: 'Mã', color: 'red', pos: 88 }, { piece: 'Xe', color: 'red', pos: 89 }
+        ].filter(p => p.piece !== null);
+        
+        const PIECE_NAMES = {
+            // Đen (Truyền thống)
+            'Tướng': '將', 'Sĩ': '士', 'Tượng': '象', 'Xe': '車', 'Mã': '馬', 'Pháo': '炮', 'Tốt': '卒', 
+            // Đỏ (Hiện đại)
+            'red': { 'Tướng': '帥', 'Sĩ': '仕', 'Tượng': '相', 'Xe': '俥', 'Mã': '傌', 'Pháo': '砲', 'Tốt': '兵' } 
+        };
+        
+        let boardState = [];
+        let selectedPiece = null;
+        let currentPlayer = 'red';
+        let isAITurn = false; // Biến cờ kiểm soát lượt AI
+        
+        // ----------------------------------------------------
+        // Hàm Utility
+        // ----------------------------------------------------
+        
+        // Hiển thị thông báo bằng Modal tùy chỉnh (thay thế cho alert)
+        const displayMessage = (title, content) => {
+            modalTitleElement.textContent = title;
+            modalContentElement.innerHTML = content;
+            modalElement.classList.add('active');
+            modalElement.style.display = 'flex';
+        };
+
+        modalCloseButton.addEventListener('click', () => {
+            modalElement.classList.remove('active');
+            setTimeout(() => modalElement.style.display = 'none', 300);
+        });
+
+        // Chuyển đổi chỉ số 1D sang tọa độ (row, col)
+        const toCoords = (pos) => ({ row: Math.floor(pos / 9), col: pos % 9 });
+        // Chuyển đổi tọa độ (row, col) sang chỉ số 1D
+        const toPos = (row, col) => row * 9 + col;
+        
+        // Lấy quân cờ tại vị trí
+        const getPieceAt = (pos) => boardState.find(p => p.pos === pos);
+
+        // Cập nhật trạng thái trò chơi trên UI
+        const updateStatus = (message, colorClass) => {
+            statusElement.textContent = message;
+            statusElement.className = `text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block shadow-md ${colorClass}`;
+        }
+        
+        // Hiển thị thông báo chiến thắng
+        const showWinMessage = (winner) => {
+            const winnerName = winner === 'red' ? 'Đỏ (Người chơi)' : 'Đen (Máy tính)';
+            const message = `${winnerName} đã thắng! Nhấn Chơi Lại.`;
+            updateStatus(message, winner === 'red' ? 'bg-red-200 text-red-800' : 'bg-gray-700 text-white');
+            // Vô hiệu hóa tương tác
+            selectedPiece = true; 
+        }
+
+        // Đổi lượt chơi và kiểm tra nếu là lượt AI
+        const switchTurn = () => {
+            currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
+            const colorName = currentPlayer === 'red' ? 'Đỏ (Người chơi)' : 'Đen (Máy tính)';
+            const colorClass = currentPlayer === 'red' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700';
+            updateStatus(`Lượt của ${colorName}`, colorClass);
+            
+            // Nếu là lượt của AI
+            if (currentPlayer === 'black') {
+                isAITurn = true;
+                setTimeout(aiMove, 500); // Tạo độ trễ 500ms để AI "suy nghĩ"
+            }
+        }
+
+        // ----------------------------------------------------
+        // Logic Kiểm tra Luật Cờ
+        // ----------------------------------------------------
+
+        // Kiểm tra xem vị trí có nằm trong Cung (Palace) hay không
+        const isInPalace = (row, col, color) => {
+            const inPalaceCol = col >= 3 && col <= 5;
+            if (color === 'red') {
+                return inPalaceCol && row >= 7 && row <= 9; // Đỏ: hàng 7, 8, 9
+            } else {
+                return inPalaceCol && row >= 0 && row <= 2; // Đen: hàng 0, 1, 2
+            }
+        };
+
+        // Kiểm tra xem quân Tốt đã qua sông hay chưa
+        const isPastRiver = (row, color) => {
+            if (color === 'red') {
+                return row <= 4; // Đỏ qua sông khi đi vào hàng 4 trở lên
+            } else {
+                return row >= 5; // Đen qua sông khi đi vào hàng 5 trở xuống
+            }
+        };
+
+        // Hàm kiểm tra nước đi cho XE (Rook)
+        const checkLine = (dR, dC, moves, enemyColor, startR, startC) => {
+            for (let i = 1; ; i++) {
+                const nextR = startR + dR * i;
+                const nextC = startC + dC * i;
+                const nextPos = toPos(nextR, nextC);
+                if (nextR < 0 || nextR >= 10 || nextC < 0 || nextC >= 9) break;
+
+                const targetPiece = getPieceAt(nextPos);
+                if (targetPiece) {
+                    if (targetPiece.color === enemyColor) {
+                        moves.push(nextPos); // Bắt quân địch
+                    }
+                    break; // Bị chặn
+                }
+                moves.push(nextPos); // Đi vào ô trống
+            }
+        };
+        
+        // Hàm kiểm tra nước đi cho PHÁO (Cannon)
+        const checkCannonLine = (dR, dC, moves, enemyColor, startR, startC) => {
+            let screenFound = false; // Biến cờ cho "Ngòi" (Screen/Pivot)
+            for (let i = 1; ; i++) {
+                const nextR = startR + dR * i;
+                const nextC = startC + dC * i;
+                const nextPos = toPos(nextR, nextC);
+                if (nextR < 0 || nextR >= 10 || nextC < 0 || nextC >= 9) break;
+
+                const targetPiece = getPieceAt(nextPos);
+                
+                if (!targetPiece) {
+                    // Ô trống
+                    if (!screenFound) {
+                        moves.push(nextPos); // Di chuyển thông thường (trước khi tìm thấy ngòi)
+                    }
+                } else {
+                    // Gặp một quân cờ
+                    if (!screenFound) {
+                        screenFound = true; // Đây là NGÒI (quân chắn đầu tiên)
+                    } else {
+                        // Gặp quân cờ thứ hai (sau ngòi)
+                        if (targetPiece.color === enemyColor) {
+                            moves.push(nextPos); // Bắt quân địch (qua ngòi)
+                        }
+                        break; // Dù bắt hay không, bị chặn bởi quân cờ thứ hai
+                    }
+                }
+            }
+        };
+
+
+        // Tìm tất cả các nước đi hợp lệ cho quân cờ (chưa bao gồm luật chiếu tướng)
+        const getValidMoves = (piece) => {
+            const { row: startR, col: startC } = toCoords(piece.pos);
+            const moves = [];
+            const color = piece.color;
+            const enemyColor = color === 'red' ? 'black' : 'red';
+
+            switch (piece.piece) {
+                case 'Tướng':
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => {
+                        const nextR = startR + dr;
+                        const nextC = startC + dc;
+                        const nextPos = toPos(nextR, nextC);
+                        const targetPiece = getPieceAt(nextPos);
+
+                        if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && isInPalace(nextR, nextC, color)) {
+                            if (!targetPiece || targetPiece.color === enemyColor) {
+                                moves.push(nextPos);
+                            }
+                        }
+                    });
+                    break;
+                case 'Sĩ':
+                    // Đi chéo 1 ô, phải ở trong Cung
+                    [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([dr, dc]) => {
+                        const nextR = startR + dr;
+                        const nextC = startC + dc;
+                        const nextPos = toPos(nextR, nextC);
+                        const targetPiece = getPieceAt(nextPos);
+
+                        if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && isInPalace(nextR, nextC, color)) {
+                            if (!targetPiece || targetPiece.color === enemyColor) {
+                                moves.push(nextPos);
+                            }
+                        }
+                    });
+                    break;
+                case 'Tượng':
+                    // Đi chéo 2 ô, không được bị cản ở ô giữa (chân Tượng)
+                    [[2, 2], [2, -2], [-2, 2], [-2, -2]].forEach(([dr, dc]) => {
+                        const nextR = startR + dr;
+                        const nextC = startC + dc;
+                        const nextPos = toPos(nextR, nextC);
+                        const targetPiece = getPieceAt(nextPos);
+                        
+                        const midR = startR + dr / 2;
+                        const midC = startC + dc / 2;
+                        const midPos = toPos(midR, midC);
+
+                        // Phải nằm trong giới hạn và KHÔNG được qua sông
+                        if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && (color === 'red' ? nextR >= 5 : nextR <= 4)) {
+                            // Kiểm tra chân tượng
+                            if (!getPieceAt(midPos) && (!targetPiece || targetPiece.color === enemyColor)) {
+                                moves.push(nextPos);
+                            }
+                        }
+                    });
+                    break;
+                case 'Xe':
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkLine(dr, dc, moves, enemyColor, startR, startC));
+                    break;
+                case 'Pháo':
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkCannonLine(dr, dc, moves, enemyColor, startR, startC));
+                    break;
+                case 'Mã':
+                    // Đi L 2-1, không được bị cản ở ô liền kề (chân Mã)
+                    [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]].forEach(([dr, dc]) => {
+                        const nextR = startR + dr;
+                        const nextC = startC + dc;
+                        const nextPos = toPos(nextR, nextC);
+                        const targetPiece = getPieceAt(nextPos);
+
+                        if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9) {
+                            // Xác định chân Mã (ô liền kề)
+                            const midR = startR + (Math.abs(dr) > 1 ? Math.sign(dr) : 0);
+                            const midC = startC + (Math.abs(dc) > 1 ? Math.sign(dc) : 0);
+                            const midPos = toPos(midR, midC);
+                            
+                            // Kiểm tra chân Mã
+                            if (!getPieceAt(midPos) && (!targetPiece || targetPiece.color === enemyColor)) {
+                                moves.push(nextPos);
+                            }
+                        }
+                    });
+                    break;
+                case 'Tốt':
+                    let possibleMoves = [];
+                    if (color === 'red') {
+                        possibleMoves.push([-1, 0]); // Luôn tiến lên
+                        if (isPastRiver(startR, color)) {
+                            possibleMoves.push([0, 1], [0, -1]); // Qua sông được đi ngang
+                        }
+                    } else { // black
+                        possibleMoves.push([1, 0]); // Luôn tiến xuống
+                        if (isPastRiver(startR, color)) {
+                            possibleMoves.push([0, 1], [0, -1]); // Qua sông được đi ngang
+                        }
+                    }
+
+                    possibleMoves.forEach(([dr, dc]) => {
+                        const nextR = startR + dr;
+                        const nextC = startC + dc;
+                        const nextPos = toPos(nextR, nextC);
+                        const targetPiece = getPieceAt(nextPos);
+
+                        if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9) {
+                            if (!targetPiece || targetPiece.color === enemyColor) {
+                                moves.push(nextPos);
+                            }
+                        }
+                    });
+                    break;
+            }
+
+            return moves;
+        };
+        
+        // ----------------------------------------------------
+        // Logic AI Đen (Máy tính)
+        // ----------------------------------------------------
+
+        const aiMove = () => {
+            if (currentPlayer !== 'black') return;
+
+            isAITurn = true; // Khóa tương tác của người chơi
+            
+            // 1. Thu thập tất cả nước đi hợp lệ của phe Đen
+            let allLegalMoves = [];
+            const blackPieces = boardState.filter(p => p.color === 'black');
+
+            for (const piece of blackPieces) {
+                const moves = getValidMoves(piece);
+                if (moves.length > 0) {
+                    moves.forEach(move => {
+                        allLegalMoves.push({ piece, targetPos: move });
+                    });
+                }
+            }
+            
+            // 2. Nếu không có nước đi, hòa hoặc thua
+            if (allLegalMoves.length === 0) {
+                updateStatus('Hòa cờ. Máy tính không còn nước đi.', 'bg-yellow-200 text-yellow-800');
+                isAITurn = false;
+                selectedPiece = true; // Khóa game
+                return;
+            }
+
+            // 3. Chọn ngẫu nhiên một nước đi
+            const randomIndex = Math.floor(Math.random() * allLegalMoves.length);
+            const { piece: pieceToMove, targetPos } = allLegalMoves[randomIndex];
+
+            // 4. Thực hiện nước đi
+            
+            // Kiểm tra và loại bỏ quân bị ăn (nếu có)
+            const capturedPiece = getPieceAt(targetPos);
+            
+            // Nếu ăn được Tướng, AI thắng
+            if (capturedPiece && capturedPiece.piece === 'Tướng') {
+                boardState = boardState.filter(p => p.pos !== targetPos); // Loại bỏ Tướng
+                pieceToMove.pos = targetPos; // Di chuyển quân AI
+                boardState = boardState.filter(p => p !== pieceToMove);
+                boardState.push(pieceToMove);
+
+                renderBoard();
+                showWinMessage('black');
+                isAITurn = false;
+                return;
+            }
+
+            // Di chuyển/Ăn quân (không phải Tướng)
+            boardState = boardState.filter(p => p.pos !== targetPos && p !== pieceToMove);
+            pieceToMove.pos = targetPos;
+            boardState.push(pieceToMove);
+
+            // 5. Kết thúc lượt AI và chuyển sang người chơi
+            isAITurn = false;
+            selectedPiece = null;
+            renderBoard();
+            switchTurn();
+        };
+
+
+        // ----------------------------------------------------
+        // Logic Thanh toán Pi Network (Mô phỏng)
+        // ----------------------------------------------------
+
+        const initiatePiPayment = () => {
+            // Đây là phần code mô phỏng việc gọi Pi SDK.
+            // Để thực hiện giao dịch Pi thực tế, ứng dụng phải được chạy trong Pi Browser.
+            
+            const content = `
+                <p>Địa chỉ ví nhận ủng hộ:</p>
+                <code class="break-all font-mono text-xs font-semibold text-green-700 p-1 bg-gray-100 rounded-md inline-block mt-1">${PI_WALLET_ADDRESS}</code>
+                <p class="mt-4">Để hoàn tất giao dịch <span class="font-bold text-red-500">1 Pi</span>, bạn cần gọi hàm Pi SDK:</p>
+                <pre class="bg-gray-100 p-2 rounded-lg text-xs overflow-x-auto mt-2">
+Pi.payments.request({
+    amount: 1,
+    memo: 'Ủng hộ game Cờ Tướng',
+    metadata: { receiver_address: '${PI_WALLET_ADDRESS}' }
+});
+                </pre>
+                <p class="mt-2 text-sm italic text-gray-500">
+                    Chức năng này chỉ hoạt động khi chạy trong Pi Browser.
+                </p>
+            `;
+
+            displayMessage('Mô phỏng Thanh toán Pi Network', content);
+        };
+
+
+        // ----------------------------------------------------
+        // Xử lý Giao diện và Sự kiện
+        // ----------------------------------------------------
+
+        // Hàm vẽ lại toàn bộ bàn cờ
+        const renderBoard = () => {
+            // Xóa các ô cũ (trừ Sông)
+            boardElement.querySelectorAll('.square').forEach(sq => sq.remove());
+            
+            // Thêm lại các ô cờ (Squares)
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const square = document.createElement('div');
+                square.className = 'square';
+                square.dataset.pos = i;
+                // Sử dụng cả 'click' và 'touchend' để tối ưu hóa cho mobile touch
+                square.addEventListener('click', handleSquareClick);
+                
+                const pieceData = getPieceAt(i);
+                if (pieceData) {
+                    const pieceElement = document.createElement('div');
+                    // Lấy ký tự Unicode/Emoji tương ứng
+                    const pieceName = pieceData.color === 'red' 
+                        ? PIECE_NAMES.red[pieceData.piece] 
+                        : PIECE_NAMES[pieceData.piece];
+                    
+                    pieceElement.textContent = pieceName;
+                    pieceElement.className = `piece ${pieceData.color}`;
+                    pieceElement.dataset.piece = pieceData.piece;
+                    pieceElement.dataset.color = pieceData.color;
+                    
+                    square.appendChild(pieceElement);
+                    
+                    if (selectedPiece && selectedPiece.pos === i) {
+                        pieceElement.classList.add('selected');
+                    }
+                }
+                
+                boardElement.appendChild(square);
+            }
+
+            // Highlight các nước đi hợp lệ nếu có quân đang được chọn
+            if (selectedPiece && !isAITurn) {
+                const validMoves = getValidMoves(selectedPiece);
+                validMoves.forEach(pos => {
+                    const square = boardElement.querySelector(`[data-pos="${pos}"]`);
+                    if (square) {
+                        square.classList.add('highlight-move');
+                    }
+                });
+            }
+            
+            // Đảm bảo Sông luôn ở trên cùng
+            const river = boardElement.querySelector('.river');
+            if (river) boardElement.appendChild(river);
+        };
+
+        // Xử lý khi click vào ô cờ
+        const handleSquareClick = (event) => {
+            // Ngăn chặn người chơi click khi không phải lượt hoặc AI đang đi
+            if (currentPlayer !== 'red' || isAITurn || selectedPiece === true) return;
+            
+            // Lấy vị trí ô cờ được click (ngay cả khi click vào quân cờ)
+            const squareElement = event.currentTarget;
+            const pos = parseInt(squareElement.dataset.pos);
+            const pieceAtPos = getPieceAt(pos);
+
+            // 1. CHƯA CÓ QUÂN NÀO ĐƯỢC CHỌN (BẮT ĐẦU CHỌN)
+            if (!selectedPiece) {
+                if (pieceAtPos && pieceAtPos.color === currentPlayer) {
+                    selectedPiece = pieceAtPos;
+                    renderBoard(); // Vẽ lại để highlight quân cờ và các nước đi
+                }
+                return;
+            }
+
+            // 2. ĐÃ CÓ QUÂN ĐƯỢC CHỌN
+            const validMoves = getValidMoves(selectedPiece);
+            
+            // 2a. Click vào cùng quân đã chọn hoặc quân khác cùng màu
+            if (pieceAtPos && pieceAtPos.color === currentPlayer) {
+                selectedPiece = pieceAtPos; // Đổi quân được chọn
+                renderBoard();
+                return;
+            }
+
+            // 2b. Click vào ô hợp lệ để di chuyển/ăn quân
+            if (validMoves.includes(pos)) {
+                // Kiểm tra nếu ăn được Tướng, kết thúc game (Người chơi thắng)
+                if (pieceAtPos && pieceAtPos.piece === 'Tướng') {
+                    // Di chuyển/ăn Tướng
+                    boardState = boardState.filter(p => p.pos !== pos); // Loại bỏ Tướng
+                    selectedPiece.pos = pos;
+                    
+                    // Cập nhật lại boardState: loại bỏ quân cũ và thêm quân mới đã di chuyển
+                    boardState = boardState.filter(p => p !== selectedPiece);
+                    boardState.push(selectedPiece);
+                    
+                    renderBoard();
+                    showWinMessage(currentPlayer);
+                    return;
+                }
+
+                // Di chuyển/Ăn quân (không phải Tướng)
+                boardState = boardState.filter(p => p.pos !== pos && p !== selectedPiece);
+                selectedPiece.pos = pos;
+                boardState.push(selectedPiece);
+                
+                // Kết thúc lượt người chơi và chuyển sang lượt AI
+                selectedPiece = null;
+                renderBoard();
+                switchTurn();
+
+            } else {
+                // Click vào ô không hợp lệ, hủy chọn
+                selectedPiece = null;
+                renderBoard();
+            }
+        };
+
+        // Khởi tạo trạng thái trò chơi
+        const initializeGame = () => {
+            // Sao chép sâu mảng ban đầu
+            boardState = INITIAL_BOARD.map(p => ({ ...p }));
+            selectedPiece = null;
+            currentPlayer = 'red';
+            isAITurn = false;
+            updateStatus('Lượt của Đỏ (Người chơi)', 'bg-red-100 text-red-700');
+            renderBoard();
+        };
+
+        // Gắn sự kiện cho nút chơi lại và nút ủng hộ
+        resetButton.addEventListener('click', initializeGame);
+        donateButton.addEventListener('click', initiatePiPayment);
+
+        // Chạy lần đầu
+        window.onload = initializeGame;
+
+    </script>
+</body>
+</html>
