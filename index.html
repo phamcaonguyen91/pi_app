@@ -177,11 +177,16 @@
 <body>
     <div class="chess-container">
         
-        <div class="flex justify-end w-full mb-3">
+        <div class="flex justify-between w-full mb-3 space-x-2">
             <select id="language-select" class="p-1 border border-gray-300 rounded text-sm bg-white shadow-sm">
                 <option value="vi">🇻🇳 Tiếng Việt</option>
                 <option value="en">🇺🇸 English</option>
                 <option value="zh">🇨🇳 中文 (Simplified)</option>
+            </select>
+            <select id="difficulty-select" class="p-1 border border-gray-300 rounded text-sm bg-white shadow-sm w-1/2">
+                <option value="easy" data-i18n="diffEasy"></option>
+                <option value="medium" data-i18n="diffMedium"></option>
+                <option value="hard" data-i18n="diffHard"></option>
             </select>
         </div>
         <div class="text-center mb-4">
@@ -225,6 +230,7 @@
         const resetButton = document.getElementById('reset-button');
         const donateButton = document.getElementById('donate-button');
         const languageSelect = document.getElementById('language-select');
+        const difficultySelect = document.getElementById('difficulty-select'); // NEW
 
         const modalElement = document.getElementById('message-modal');
         const modalTitleElement = document.getElementById('modal-title');
@@ -234,7 +240,7 @@
         
         const BOARD_SIZE = 90; // 9 cột x 10 hàng
 
-        // Dữ liệu ngôn ngữ (THÊM MỚI)
+        // Dữ liệu ngôn ngữ (ĐÃ CẬP NHẬT)
         const translations = {
             'vi': {
                 gameTitle: 'Cờ Tướng 2D',
@@ -243,6 +249,11 @@
                 donateButton: 'Ủng hộ 1 Pi',
                 modalTitle: 'Thông báo',
                 closeButton: 'Đóng',
+                restartConfirm: 'Bạn có muốn khởi động lại trò chơi với cấp độ mới?', // NEW
+                // Cấp độ khó (NEW)
+                diffEasy: 'Dễ',
+                diffMedium: 'Trung bình',
+                diffHard: 'Khó',
                 // Trạng thái game
                 statusRedTurn: 'Lượt của Đỏ (Người chơi)',
                 statusBlackTurn: 'Lượt của Đen (Máy tính)',
@@ -281,6 +292,11 @@
                 donateButton: 'Donate 1 Pi',
                 modalTitle: 'Notification',
                 closeButton: 'Close',
+                restartConfirm: 'Do you want to restart the game with the new difficulty?', // NEW
+                // Difficulty Levels (NEW)
+                diffEasy: 'Easy',
+                diffMedium: 'Medium',
+                diffHard: 'Hard',
                 // Game status
                 statusRedTurn: "Red's Turn (Player)",
                 statusBlackTurn: "Black's Turn (AI)",
@@ -319,6 +335,11 @@
                 donateButton: '捐赠 1 Pi',
                 modalTitle: '通知',
                 closeButton: '关闭',
+                restartConfirm: '您想用新的难度重新开始游戏吗？', // NEW
+                // Difficulty Levels (NEW)
+                diffEasy: '简单',
+                diffMedium: '中等',
+                diffHard: '困难',
                 // Game status
                 statusRedTurn: '红方回合 (玩家)',
                 statusBlackTurn: '黑方回合 (电脑)',
@@ -352,26 +373,27 @@
             }
         };
 
-        // Biến ngôn ngữ hiện tại
+        // Biến ngôn ngữ và cấp độ khó hiện tại (ĐÃ CẬP NHẬT)
         let currentLang = localStorage.getItem('lang') || 'vi'; 
         languageSelect.value = currentLang;
+        
+        let currentDifficulty = localStorage.getItem('difficulty') || 'medium'; // NEW difficulty state
+        difficultySelect.value = currentDifficulty;
 
-        // Hàm dịch thuật (THÊM MỚI)
+        // Hàm dịch thuật
         const t = (key) => {
             const translation = translations[currentLang];
             if (translation && translation[key]) {
                 return translation[key];
             }
-            // Fallback về tiếng Việt nếu không tìm thấy key
             return translations['vi'][key] || key; 
         };
         
-        // Hàm áp dụng ngôn ngữ (THÊM MỚI)
+        // Hàm áp dụng ngôn ngữ
         const applyLanguage = (lang) => {
             currentLang = lang;
             localStorage.setItem('lang', lang);
             
-            // 1. Dịch các phần tử có data-i18n
             document.querySelectorAll('[data-i18n]').forEach(element => {
                 const key = element.getAttribute('data-i18n');
                 if (key) {
@@ -379,21 +401,27 @@
                 }
             });
 
-            // 2. Cập nhật trạng thái game (vì nó không dùng data-i18n)
-            // Cần chạy lại switchTurn hoặc initializeGame
             if (currentPlayer === 'red') {
                 updateStatus(t('statusRedTurn'), 'bg-red-100 text-red-700');
             } else {
                 updateStatus(t('statusBlackTurn'), 'bg-gray-100 text-gray-700');
             }
 
-            // 3. Cập nhật tiêu đề trang
             document.title = t('gameTitle');
         };
 
-        // Gắn sự kiện thay đổi ngôn ngữ (THÊM MỚI)
+        // Gắn sự kiện thay đổi ngôn ngữ
         languageSelect.addEventListener('change', (e) => {
             applyLanguage(e.target.value);
+        });
+
+        // Gắn sự kiện thay đổi độ khó (NEW)
+        difficultySelect.addEventListener('change', (e) => {
+            currentDifficulty = e.target.value;
+            localStorage.setItem('difficulty', currentDifficulty);
+            if (confirm(t('restartConfirm'))) {
+                initializeGame();
+            }
         });
 
         const INITIAL_BOARD = [
@@ -419,20 +447,29 @@
             // Đỏ (Hiện đại)
             'red': { 'Tướng': '帥', 'Sĩ': '仕', 'Tượng': '相', 'Xe': '俥', 'Mã': '傌', 'Pháo': '砲', 'Tốt': '兵' } 
         };
+
+        // NEW: Giá trị quân cờ (dùng cho thuật toán AI)
+        const PIECE_VALUES = {
+            'Tướng': 100000, // Tướng có giá trị rất cao (gần như vô hạn)
+            'Xe': 900, 
+            'Pháo': 450,
+            'Mã': 400,
+            'Tượng': 200,
+            'Sĩ': 200,
+            'Tốt': 100 // Tốt cơ bản
+        };
         
         let boardState = [];
         let selectedPiece = null;
         let currentPlayer = 'red';
-        let isAITurn = false; // Biến cờ kiểm soát lượt AI
+        let isAITurn = false; 
         
         // ----------------------------------------------------
         // Hàm Utility
         // ----------------------------------------------------
         
-        // Hàm copy văn bản
         const copyToClipboard = (text) => {
             navigator.clipboard.writeText(text).then(() => {
-                // Hiển thị thông báo nhỏ trên nút tùy chỉnh
                 const targetButton = modalCustomButton.classList.contains('hidden') ? modalCloseButton : modalCustomButton;
                 const originalContent = targetButton.textContent;
                 const originalClass = targetButton.className;
@@ -450,14 +487,12 @@
             });
         };
 
-        // Hiển thị thông báo bằng Modal tùy chỉnh (thay thế cho alert)
         const displayMessage = (title, content, customButton) => {
             modalTitleElement.textContent = title;
             modalContentElement.innerHTML = content;
             modalElement.classList.add('active');
             modalElement.style.display = 'flex';
             
-            // Xóa sự kiện cũ
             modalCustomButton.onclick = null; 
             modalCustomButton.classList.add('hidden');
 
@@ -483,113 +518,106 @@
         // Chuyển đổi tọa độ (row, col) sang chỉ số 1D
         const toPos = (row, col) => row * 9 + col;
         
-        // Lấy quân cờ tại vị trí
-        const getPieceAt = (pos) => boardState.find(p => p.pos === pos);
+        // Lấy quân cờ tại vị trí (ĐÃ CẬP NHẬT để hỗ trợ AI Simulation)
+        const getPieceAt = (pos, board = boardState) => board.find(p => p.pos === pos);
 
-        // Cập nhật trạng thái trò chơi trên UI (SỬA ĐỔI)
+        // Cập nhật trạng thái trò chơi trên UI
         const updateStatus = (message, colorClass) => {
             statusElement.textContent = message;
             statusElement.className = `text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block shadow-md ${colorClass}`;
         }
         
-        // Hiển thị thông báo chiến thắng (SỬA ĐỔI)
+        // Hiển thị thông báo chiến thắng
         const showWinMessage = (winner) => {
             const winnerName = winner === 'red' ? t('winRed') : t('winBlack');
             const message = t('winMessage')(winnerName);
             updateStatus(message, winner === 'red' ? 'bg-red-200 text-red-800' : 'bg-gray-700 text-white');
-            // Vô hiệu hóa tương tác
             selectedPiece = true; 
         }
 
-        // Đổi lượt chơi và kiểm tra nếu là lượt AI (SỬA ĐỔI)
+        // Đổi lượt chơi và kiểm tra nếu là lượt AI
         const switchTurn = () => {
             currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
             const statusMessage = currentPlayer === 'red' ? t('statusRedTurn') : t('statusBlackTurn');
             const colorClass = currentPlayer === 'red' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700';
             updateStatus(statusMessage, colorClass);
             
-            // Nếu là lượt của AI
             if (currentPlayer === 'black') {
                 isAITurn = true;
-                setTimeout(aiMove, 500); // Tạo độ trễ 500ms để AI "suy nghĩ"
+                setTimeout(aiMove, 500); 
             }
         }
 
         // ----------------------------------------------------
-        // Logic Kiểm tra Luật Cờ
+        // Logic Kiểm tra Luật Cờ (ĐÃ CẬP NHẬT để hỗ trợ AI Simulation)
         // ----------------------------------------------------
 
-        // Kiểm tra xem vị trí có nằm trong Cung (Palace) hay không
         const isInPalace = (row, col, color) => {
             const inPalaceCol = col >= 3 && col <= 5;
             if (color === 'red') {
-                return inPalaceCol && row >= 7 && row <= 9; // Đỏ: hàng 7, 8, 9
+                return inPalaceCol && row >= 7 && row <= 9; 
             } else {
-                return inPalaceCol && row >= 0 && row <= 2; // Đen: hàng 0, 1, 2
+                return inPalaceCol && row >= 0 && row <= 2; 
             }
         };
 
-        // Kiểm tra xem quân Tốt đã qua sông hay chưa
         const isPastRiver = (row, color) => {
             if (color === 'red') {
-                return row <= 4; // Đỏ qua sông khi đi vào hàng 4 trở lên
+                return row <= 4; 
             } else {
-                return row >= 5; // Đen qua sông khi đi vào hàng 5 trở xuống
+                return row >= 5; 
             }
         };
 
-        // Hàm kiểm tra nước đi cho XE (Rook)
-        const checkLine = (dR, dC, moves, enemyColor, startR, startC) => {
+        // Hàm kiểm tra đường đi cho XE
+        const checkLine = (dR, dC, moves, enemyColor, startR, startC, currentBoard) => {
             for (let i = 1; ; i++) {
                 const nextR = startR + dR * i;
                 const nextC = startC + dC * i;
                 const nextPos = toPos(nextR, nextC);
                 if (nextR < 0 || nextR >= 10 || nextC < 0 || nextC >= 9) break;
 
-                const targetPiece = getPieceAt(nextPos);
+                const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
                 if (targetPiece) {
                     if (targetPiece.color === enemyColor) {
-                        moves.push(nextPos); // Bắt quân địch
+                        moves.push(nextPos); 
                     }
-                    break; // Bị chặn
+                    break; 
                 }
-                moves.push(nextPos); // Đi vào ô trống
+                moves.push(nextPos); 
             }
         };
         
-        // Hàm kiểm tra nước đi cho PHÁO (Cannon)
-        const checkCannonLine = (dR, dC, moves, enemyColor, startR, startC) => {
-            let screenFound = false; // Biến cờ cho "Ngòi" (Screen/Pivot)
+        // Hàm kiểm tra đường đi cho PHÁO
+        const checkCannonLine = (dR, dC, moves, enemyColor, startR, startC, currentBoard) => {
+            let screenFound = false; 
             for (let i = 1; ; i++) {
                 const nextR = startR + dR * i;
                 const nextC = startC + dC * i;
                 const nextPos = toPos(nextR, nextC);
                 if (nextR < 0 || nextR >= 10 || nextC < 0 || nextC >= 9) break;
 
-                const targetPiece = getPieceAt(nextPos);
+                const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
                 
                 if (!targetPiece) {
-                    // Ô trống
                     if (!screenFound) {
-                        moves.push(nextPos); // Di chuyển thông thường (trước khi tìm thấy ngòi)
+                        moves.push(nextPos); 
                     }
                 } else {
-                    // Gặp một quân cờ
                     if (!screenFound) {
-                        screenFound = true; // Đây là NGÒI (quân chắn đầu tiên)
+                        screenFound = true; 
                     } else {
-                        // Gặp quân cờ thứ hai (sau ngòi)
                         if (targetPiece.color === enemyColor) {
-                            moves.push(nextPos); // Bắt quân địch (qua ngòi)
+                            moves.push(nextPos); 
                         }
-                        break; // Dù bắt hay không, bị chặn bởi quân cờ thứ hai
+                        break; 
                     }
                 }
             }
         };
 
-        // Tìm tất cả các nước đi hợp lệ cho quân cờ (chưa bao gồm luật chiếu tướng)
-        const getValidMoves = (piece) => {
+        // Tìm tất cả các nước đi hợp lệ cho quân cờ (ĐÃ CẬP NHẬT để hỗ trợ AI Simulation)
+        const getValidMoves = (piece, currentBoard = boardState) => {
             const { row: startR, col: startC } = toCoords(piece.pos);
             const moves = [];
             const color = piece.color;
@@ -601,7 +629,7 @@
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos);
+                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && isInPalace(nextR, nextC, color)) {
                             if (!targetPiece || targetPiece.color === enemyColor) {
@@ -611,12 +639,11 @@
                     });
                     break;
                 case 'Sĩ':
-                    // Đi chéo 1 ô, phải ở trong Cung
                     [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([dr, dc]) => {
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos);
+                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && isInPalace(nextR, nextC, color)) {
                             if (!targetPiece || targetPiece.color === enemyColor) {
@@ -626,48 +653,42 @@
                     });
                     break;
                 case 'Tượng':
-                    // Đi chéo 2 ô, không được bị cản ở ô giữa (chân Tượng)
                     [[2, 2], [2, -2], [-2, 2], [-2, -2]].forEach(([dr, dc]) => {
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos);
+                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
                         
                         const midR = startR + dr / 2;
                         const midC = startC + dc / 2;
                         const midPos = toPos(midR, midC);
 
-                        // Phải nằm trong giới hạn và KHÔNG được qua sông
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && (color === 'red' ? nextR >= 5 : nextR <= 4)) {
-                            // Kiểm tra chân tượng
-                            if (!getPieceAt(midPos) && (!targetPiece || targetPiece.color === enemyColor)) {
+                            if (!getPieceAt(midPos, currentBoard) && (!targetPiece || targetPiece.color === enemyColor)) { // Dùng currentBoard
                                 moves.push(nextPos);
                             }
                         }
                     });
                     break;
                 case 'Xe':
-                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkLine(dr, dc, moves, enemyColor, startR, startC));
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkLine(dr, dc, moves, enemyColor, startR, startC, currentBoard)); // Dùng currentBoard
                     break;
                 case 'Pháo':
-                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkCannonLine(dr, dc, moves, enemyColor, startR, startC));
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkCannonLine(dr, dc, moves, enemyColor, startR, startC, currentBoard)); // Dùng currentBoard
                     break;
                 case 'Mã':
-                    // Đi L 2-1, không được bị cản ở ô liền kề (chân Mã)
                     [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]].forEach(([dr, dc]) => {
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos);
+                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9) {
-                            // Xác định chân Mã (ô liền kề)
                             const midR = startR + (Math.abs(dr) > 1 ? Math.sign(dr) : 0);
                             const midC = startC + (Math.abs(dc) > 1 ? Math.sign(dc) : 0);
                             const midPos = toPos(midR, midC);
                             
-                            // Kiểm tra chân Mã
-                            if (!getPieceAt(midPos) && (!targetPiece || targetPiece.color === enemyColor)) {
+                            if (!getPieceAt(midPos, currentBoard) && (!targetPiece || targetPiece.color === enemyColor)) { // Dùng currentBoard
                                 moves.push(nextPos);
                             }
                         }
@@ -676,14 +697,14 @@
                 case 'Tốt':
                     let possibleMoves = [];
                     if (color === 'red') {
-                        possibleMoves.push([-1, 0]); // Luôn tiến lên
+                        possibleMoves.push([-1, 0]); 
                         if (isPastRiver(startR, color)) {
-                            possibleMoves.push([0, 1], [0, -1]); // Qua sông được đi ngang
+                            possibleMoves.push([0, 1], [0, -1]); 
                         }
-                    } else { // black
-                        possibleMoves.push([1, 0]); // Luôn tiến xuống
+                    } else { 
+                        possibleMoves.push([1, 0]); 
                         if (isPastRiver(startR, color)) {
-                            possibleMoves.push([0, 1], [0, -1]); // Qua sông được đi ngang
+                            possibleMoves.push([0, 1], [0, -1]); 
                         }
                     }
 
@@ -691,7 +712,7 @@
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos);
+                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9) {
                             if (!targetPiece || targetPiece.color === enemyColor) {
@@ -706,64 +727,171 @@
         };
 
         // ----------------------------------------------------
-        // Logic AI Đen (Máy tính) - Đã Cải Tiến
+        // Logic AI Cấp Độ Khó (NEW)
+        // ----------------------------------------------------
+
+        // Hàm mô phỏng nước đi và tạo ra trạng thái bàn cờ mới (Immutable)
+        const simulateMove = (board, piece, targetPos) => {
+            // Lọc ra quân bị ăn (nếu có) và quân đang di chuyển
+            let newBoard = board.filter(p => p.pos !== targetPos && p.pos !== piece.pos).map(p => ({ ...p }));
+            
+            // Clone quân đang di chuyển và cập nhật vị trí mới
+            const newPiece = { ...piece, pos: targetPos };
+            newBoard.push(newPiece);
+            return newBoard;
+        };
+
+        // Hàm đánh giá trạng thái bàn cờ
+        const evaluateBoard = (board, maximizingColor) => {
+            let score = 0;
+            
+            board.forEach(piece => {
+                let value = PIECE_VALUES[piece.piece] || 0;
+                
+                // Điều chỉnh giá trị Tốt nếu qua sông
+                if (piece.piece === 'Tốt') {
+                    const { row } = toCoords(piece.pos);
+                    const isTốtPastRiver = isPastRiver(row, piece.color);
+                    if (isTốtPastRiver) {
+                        value *= 2; 
+                    }
+                }
+                
+                // Cộng điểm nếu là quân của người chơi tối ưu hóa, trừ điểm nếu là quân địch
+                if (piece.color === maximizingColor) {
+                    score += value;
+                } else {
+                    score -= value;
+                }
+            });
+            
+            return score;
+        };
+        
+        // Hàm tìm tất cả nước đi hợp lệ cho một màu trên một bàn cờ
+        const getAllLegalMoves = (board, color) => {
+            let allMoves = [];
+            const pieces = board.filter(p => p.color === color);
+            
+            for (const piece of pieces) {
+                const validMoves = getValidMoves(piece, board);
+                validMoves.forEach(targetPos => allMoves.push({ piece, targetPos }));
+            }
+            return allMoves;
+        };
+
+        // Thuật toán tìm kiếm nước đi tốt nhất (Minimax - Đơn giản)
+        const findBestMove = (board, playerColor, depth) => {
+            const moves = getAllLegalMoves(board, playerColor);
+            if (moves.length === 0) return null;
+            
+            if (depth === 1) { // Medium Difficulty (Greedy - 1-ply Lookahead)
+                let bestScore = -Infinity;
+                let bestMove = null;
+
+                for (const move of moves) {
+                    const newBoard = simulateMove(board, move.piece, move.targetPos);
+                    const score = evaluateBoard(newBoard, playerColor);
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = move;
+                    }
+                }
+                return bestMove;
+                
+            } else if (depth >= 2) { // Hard Difficulty (Simplified Minimax - 2-ply Lookahead)
+                let bestScore = -Infinity;
+                let bestMove = null;
+                const opponentColor = playerColor === 'black' ? 'red' : 'black';
+                
+                for (const aiMove of moves) {
+                    const boardAfterAI = simulateMove(board, aiMove.piece, aiMove.targetPos);
+                    
+                    // Giai đoạn 2: Giả định đối thủ chọn nước đi tốt nhất cho họ (tối thiểu hóa điểm AI)
+                    const opponentMoves = getAllLegalMoves(boardAfterAI, opponentColor);
+                    let minOpponentScore = Infinity; // Tìm điểm tối thiểu nhất cho AI
+
+                    if (opponentMoves.length > 0) {
+                        for (const opponentMove of opponentMoves) {
+                            const boardAfterOpponent = simulateMove(boardAfterAI, opponentMove.piece, opponentMove.targetPos);
+                            
+                            // Đánh giá trạng thái cuối cùng từ góc nhìn của AI
+                            const score = evaluateBoard(boardAfterOpponent, playerColor); 
+                            minOpponentScore = Math.min(minOpponentScore, score);
+                        }
+                    } else {
+                        // Nếu đối thủ không có nước đi (có thể là chiếu bí hoặc hòa), dùng điểm trạng thái hiện tại
+                        minOpponentScore = evaluateBoard(boardAfterAI, playerColor);
+                    }
+                    
+                    // So sánh điểm tối thiểu mà AI nhận được sau nước đi của đối thủ
+                    if (minOpponentScore > bestScore) {
+                        bestScore = minOpponentScore;
+                        bestMove = aiMove;
+                    }
+                }
+                return bestMove;
+            }
+            
+            return null;
+        };
+
+        // ----------------------------------------------------
+        // Logic AI Đen (Máy tính) - ĐÃ CẬP NHẬT
         // ----------------------------------------------------
 
         const aiMove = () => {
             if (currentPlayer !== 'black') return;
 
             isAITurn = true; 
-            
-            // 1. Thu thập tất cả nước đi hợp lệ và phân loại
-            let allLegalMoves = [];
-            let capturingMoves = []; 
-            let generalCaptureMoves = []; // Nước đi bắt Tướng (thắng ngay)
-
-            const blackPieces = boardState.filter(p => p.color === 'black');
-
-            for (const piece of blackPieces) {
-                const moves = getValidMoves(piece);
-                if (moves.length > 0) {
-                    moves.forEach(move => {
-                        const moveData = { piece, targetPos: move };
-                        allLegalMoves.push(moveData);
-                        
-                        const targetPiece = getPieceAt(move);
-                        if (targetPiece) {
-                            if (targetPiece.piece === 'Tướng') {
-                                generalCaptureMoves.push(moveData); // Nước đi bắt Tướng
-                            }
-                            capturingMoves.push(moveData); // Nước đi bắt quân nói chung
-                        }
-                    });
-                }
-            }
-            
-            // 2. Chọn bộ nước đi theo ưu tiên
             let moveSet = [];
-            if (generalCaptureMoves.length > 0) {
-                moveSet = generalCaptureMoves; // Ưu tiên 1: Thắng ngay (Bắt Tướng)
-            } else if (capturingMoves.length > 0) {
-                moveSet = capturingMoves; // Ưu tiên 2: Bắt quân khác
-            } else {
-                moveSet = allLegalMoves; // Ưu tiên 3: Đi ngẫu nhiên
+            let bestMove = null;
+            
+            if (currentDifficulty === 'easy') {
+                // Easy: Ưu tiên bắt Tướng > bắt quân khác > ngẫu nhiên
+                let allLegalMoves = getAllLegalMoves(boardState, 'black');
+                let generalCaptureMoves = allLegalMoves.filter(move => getPieceAt(move.targetPos)?.piece === 'Tướng');
+                let capturingMoves = allLegalMoves.filter(move => getPieceAt(move.targetPos) && getPieceAt(move.targetPos).piece !== 'Tướng');
+                
+                if (generalCaptureMoves.length > 0) {
+                    moveSet = generalCaptureMoves;
+                } else if (capturingMoves.length > 0) {
+                    moveSet = capturingMoves;
+                } else {
+                    moveSet = allLegalMoves;
+                }
+
+                if (moveSet.length === 0) {
+                    updateStatus(t('drawMessage'), 'bg-yellow-200 text-yellow-800');
+                    isAITurn = false;
+                    selectedPiece = true; 
+                    return;
+                }
+                // Chọn ngẫu nhiên từ bộ nước đi ưu tiên
+                const randomIndex = Math.floor(Math.random() * moveSet.length);
+                bestMove = moveSet[randomIndex];
+
+            } else if (currentDifficulty === 'medium') {
+                // Medium: 1-ply Lookahead (Greedy)
+                bestMove = findBestMove(boardState, 'black', 1);
+
+            } else if (currentDifficulty === 'hard') {
+                // Hard: 2-ply Lookahead (Simplified Minimax)
+                bestMove = findBestMove(boardState, 'black', 2);
             }
             
-            if (moveSet.length === 0) {
+            if (!bestMove) {
                 updateStatus(t('drawMessage'), 'bg-yellow-200 text-yellow-800');
                 isAITurn = false;
                 selectedPiece = true; 
                 return;
             }
-
-            // 3. Chọn ngẫu nhiên một nước đi từ bộ ưu tiên
-            const randomIndex = Math.floor(Math.random() * moveSet.length);
-            const { piece: pieceToMove, targetPos } = moveSet[randomIndex];
+            
+            const { piece: pieceToMove, targetPos } = bestMove;
+            const capturedPiece = getPieceAt(targetPos);
 
             // 4. Thực hiện nước đi
-            const capturedPiece = getPieceAt(targetPos);
-            
-            // Nếu ăn được Tướng, AI thắng
             if (capturedPiece && capturedPiece.piece === 'Tướng') {
                 boardState = boardState.filter(p => p.pos !== targetPos); 
                 pieceToMove.pos = targetPos; 
@@ -777,7 +905,7 @@
             }
 
             // Di chuyển/Ăn quân (không phải Tướng)
-            boardState = boardState.filter(p => p.pos !== targetPos && p !== pieceToMove);
+            boardState = boardState.filter(p => p.pos !== targetPos && p.pos !== pieceToMove.pos);
             pieceToMove.pos = targetPos;
             boardState.push(pieceToMove);
 
@@ -789,7 +917,7 @@
 
 
         // ----------------------------------------------------
-        // Logic Ủng hộ (Chuyển sang Ví Pi) (SỬA ĐỔI)
+        // Logic Ủng hộ
         // ----------------------------------------------------
 
         const initiatePiPayment = () => {
@@ -798,23 +926,18 @@
             const customButton = {
                 text: t('donateButtonAction'),
                 action: () => {
-                    // Chuyển hướng đến Pi Wallet
                     window.open('https://wallet.pinet.com/', '_blank');
-                    // Tự động đóng modal
                     modalCloseButton.click(); 
                 }
             };
 
-            // Hiển thị modal hướng dẫn và nút Mở Ví
             displayMessage(t('donateTitle'), content, customButton);
             
-            // Gắn sự kiện copy sau khi modal được hiển thị 
             setTimeout(() => {
                 const copyArea = document.getElementById('wallet-copy-area');
                 if (copyArea) {
                     copyArea.onclick = () => {
                         copyToClipboard(PI_WALLET_ADDRESS);
-                        // Cập nhật biểu tượng/nội dung nhỏ khi copy thành công
                         copyArea.querySelector('.copy-icon').textContent = '✅';
                         setTimeout(() => {
                             copyArea.querySelector('.copy-icon').textContent = '📋';
@@ -829,12 +952,9 @@
         // Xử lý Giao diện và Sự kiện
         // ----------------------------------------------------
 
-        // Hàm vẽ lại toàn bộ bàn cờ
         const renderBoard = () => {
-            // Xóa các ô cũ (trừ Sông)
             boardElement.querySelectorAll('.square').forEach(sq => sq.remove());
             
-            // Thêm lại các ô cờ (Squares)
             for (let i = 0; i < BOARD_SIZE; i++) {
                 const square = document.createElement('div');
                 square.className = 'square';
@@ -873,12 +993,10 @@
                 });
             }
             
-            // Đảm bảo Sông luôn nằm trên cùng (để không bị đè lên quân cờ)
             const river = boardElement.querySelector('.river');
             if (river) boardElement.appendChild(river);
         };
 
-        // Xử lý khi click vào ô cờ
         const handleSquareClick = (event) => {
             if (currentPlayer !== 'red' || isAITurn || selectedPiece === true) return;
             
@@ -886,7 +1004,6 @@
             const pos = parseInt(squareElement.dataset.pos);
             const pieceAtPos = getPieceAt(pos);
 
-            // 1. Nếu chưa có quân nào được chọn
             if (!selectedPiece) {
                 if (pieceAtPos && pieceAtPos.color === currentPlayer) {
                     selectedPiece = pieceAtPos;
@@ -897,17 +1014,14 @@
 
             const validMoves = getValidMoves(selectedPiece);
             
-            // 2. Nếu đã chọn quân, nhưng click vào quân cùng màu
             if (pieceAtPos && pieceAtPos.color === currentPlayer) {
                 selectedPiece = pieceAtPos; 
                 renderBoard();
                 return;
             }
 
-            // 3. Nếu click vào ô hợp lệ (di chuyển hoặc ăn)
             if (validMoves.includes(pos)) {
                 
-                // Nếu ăn Tướng, người chơi thắng ngay
                 if (pieceAtPos && pieceAtPos.piece === 'Tướng') {
                     boardState = boardState.filter(p => p.pos !== pos); 
                     selectedPiece.pos = pos;
@@ -920,38 +1034,33 @@
                     return;
                 }
 
-                // Di chuyển/Ăn quân (không phải Tướng)
                 boardState = boardState.filter(p => p.pos !== pos && p !== selectedPiece);
                 selectedPiece.pos = pos;
                 boardState.push(selectedPiece);
                 
-                // Kết thúc lượt người chơi và chuyển sang lượt AI
                 selectedPiece = null;
                 renderBoard();
                 switchTurn();
 
             } else {
-                // Click vào ô không hợp lệ, hủy chọn
                 selectedPiece = null;
                 renderBoard();
             }
         };
 
-        // Khởi tạo trạng thái trò chơi (SỬA ĐỔI)
+        // Khởi tạo trạng thái trò chơi
         const initializeGame = () => {
-            // Sao chép sâu mảng ban đầu
             boardState = INITIAL_BOARD.map(p => ({ ...p }));
             selectedPiece = null;
             currentPlayer = 'red';
             isAITurn = false;
             
-            // Cập nhật ngôn ngữ và trạng thái
+            // Tải lại ngôn ngữ và cấp độ khó
             applyLanguage(currentLang);
             updateStatus(t('statusRedTurn'), 'bg-red-100 text-red-700');
             renderBoard();
         };
 
-        // Gắn sự kiện cho nút chơi lại và nút ủng hộ
         resetButton.addEventListener('click', initializeGame);
         donateButton.addEventListener('click', initiatePiPayment);
 
