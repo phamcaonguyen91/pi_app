@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cờ Tướng 2D - Mobile Friendly</title>
+    <!-- Tải Tailwind CSS để đơn giản hóa việc tạo giao diện hiện đại và responsive -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         /* Thiết lập font cho các quân cờ bằng Unicode/Emoji, đảm bảo hiển thị đẹp và sắc nét */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -165,9 +165,11 @@
         </div>
 
         <div class="board" id="board">
+            <!-- Sông (River) -->
             <div class="river"><span class="river-text">Sông Hà</span></div>
             
-            </div>
+            <!-- Các ô cờ sẽ được thêm bằng JavaScript -->
+        </div>
 
         <div class="mt-4 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 w-full">
             <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
@@ -178,6 +180,7 @@
             </button>
         </div>
         
+        <!-- Modal Thông báo (Thay thế cho alert()) -->
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div class="bg-white p-6 rounded-xl shadow-2xl max-w-xs w-full">
                 <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800">Thông báo</h3>
@@ -546,86 +549,30 @@
 
 
         // ----------------------------------------------------
-        // Logic Thanh toán Pi Network (Thực tế với Pi SDK)
+        // Logic Thanh toán Pi Network (Mô phỏng)
         // ----------------------------------------------------
 
         const initiatePiPayment = () => {
-            // Kiểm tra xem Pi SDK đã tải chưa và có sẵn không
-            if (typeof Pi === 'undefined') {
-                displayMessage('Lỗi hệ thống', '<p class="text-red-600 font-bold">Không tìm thấy Pi SDK. Chức năng thanh toán chỉ hoạt động khi ứng dụng được chạy trong Pi Browser.</p>');
-                return;
-            }
-
-            const amount = 1.0;
-            const memo = 'Ủng hộ 1 Pi cho game Cờ Tướng 2D';
-
-            // Cấu hình giao dịch với các hàm callback chi tiết
-            const paymentConfig = {
-                amount: amount,
-                memo: memo,
-                // Metadata: Dữ liệu tùy chỉnh mà nhà phát triển ứng dụng sử dụng
-                metadata: { 
-                    app_purpose: 'donation', 
-                    receiver_address: PI_WALLET_ADDRESS 
-                },
-                
-                // Hàm callback: Xử lý các giao dịch đang chờ xử lý
-                onIncompletePaymentFound: (payment) => {
-                    displayMessage(
-                        'Thanh toán chưa hoàn tất', 
-                        `<p>Tìm thấy giao dịch đang chờ xử lý (ID: ${payment.identifier}). Vui lòng hoàn tất hoặc hủy bỏ trong Pi Browser.</p>`
-                    );
-                    // Trong ứng dụng thực tế: bạn sẽ cần thêm logic để gọi Pi.payments.complete/cancel
-                },
-                
-                // Hàm callback: Giao dịch hoàn tất thành công
-                onPaymentCompleted: (payment) => {
-                    const txid = payment.transaction ? (payment.transaction.txid || 'N/A') : 'N/A';
-                    displayMessage(
-                        'Thanh toán thành công!', 
-                        `<p class="text-green-600 font-bold">Bạn đã ủng hộ thành công ${payment.amount} Pi!</p>
-                        <p>ID Thanh toán (Payment ID): ${payment.identifier}</p>
-                        <p>ID Giao dịch (Tx ID): <code class="break-all text-xs font-mono">${txid}</code></p>
-                        <p class="mt-2 text-sm italic">Cảm ơn sự ủng hộ của bạn!</p>`
-                    );
-                },
-                
-                // Hàm callback: Giao dịch bị người dùng hủy
-                onPaymentCanceled: (payment) => {
-                    displayMessage(
-                        'Đã hủy', 
-                        'Giao dịch đã bị bạn hủy bỏ.'
-                    );
-                },
-                
-                // Hàm callback: Có lỗi xảy ra trong quá trình thanh toán
-                onPaymentError: (error, payment) => {
-                    const errorMessage = error.message || 'Lỗi không xác định.';
-                    displayMessage(
-                        'Lỗi Thanh toán Pi', 
-                        `<p class="text-red-600 font-bold">Giao dịch thất bại.</p>
-                        <p>Mã lỗi: ${error.name || 'N/A'}</p>
-                        <p>Chi tiết: ${errorMessage}</p>`
-                    );
-                }
-            };
+            // Đây là phần code mô phỏng việc gọi Pi SDK.
+            // Để thực hiện giao dịch Pi thực tế, ứng dụng phải được chạy trong Pi Browser.
             
-            try {
-                // Hiển thị thông báo chờ trước khi gọi SDK
-                displayMessage('Đang chờ...', 'Đang yêu cầu thanh toán 1 Pi. Vui lòng xem và xác nhận trong Pi Browser.');
-                
-                // Gửi yêu cầu thanh toán
-                Pi.payments.request(paymentConfig);
-                
-            } catch (error) {
-                // Xử lý lỗi nếu việc gọi Pi.payments.request bị lỗi trước khi giao diện mở ra
-                displayMessage(
-                    'Lỗi hệ thống', 
-                    `<p class="text-red-600 font-bold">Không thể khởi tạo yêu cầu thanh toán.</p>
-                    <p>Lỗi: ${error.message}</p>
-                    <p class="mt-2 text-sm italic">Hãy đảm bảo Pi SDK đã được tải đúng cách.</p>`
-                );
-            }
+            const content = `
+                <p>Địa chỉ ví nhận ủng hộ:</p>
+                <code class="break-all font-mono text-xs font-semibold text-green-700 p-1 bg-gray-100 rounded-md inline-block mt-1">${PI_WALLET_ADDRESS}</code>
+                <p class="mt-4">Để hoàn tất giao dịch <span class="font-bold text-red-500">1 Pi</span>, bạn cần gọi hàm Pi SDK:</p>
+                <pre class="bg-gray-100 p-2 rounded-lg text-xs overflow-x-auto mt-2">
+Pi.payments.request({
+    amount: 1,
+    memo: 'Ủng hộ game Cờ Tướng',
+    metadata: { receiver_address: '${PI_WALLET_ADDRESS}' }
+});
+                </pre>
+                <p class="mt-2 text-sm italic text-gray-500">
+                    Chức năng này chỉ hoạt động khi chạy trong Pi Browser.
+                </p>
+            `;
+
+            displayMessage('Mô phỏng Thanh toán Pi Network', content);
         };
 
 
