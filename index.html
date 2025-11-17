@@ -6,9 +6,6 @@
     <title>Cờ Tướng 2D - Mobile Friendly</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script>
-    Pi.init({ version: "2.0" });
-</script>
     <style>
         /* Thiết lập font cho các quân cờ bằng Unicode/Emoji, đảm bảo hiển thị đẹp và sắc nét */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -195,9 +192,7 @@
         // Cấu hình & Khởi tạo
         // ----------------------------------------------------
         
-        // Bạn không cần địa chỉ ví ở đây nữa, vì thanh toán sẽ
-        // tự động chuyển đến ví bạn đã thiết lập trong Pi Developer Portal.
-        // const PI_WALLET_ADDRESS = '...'; 
+        const PI_WALLET_ADDRESS = 'GBML46SIXNWSYMDJNHPA5CJ4LT65EBJF66HZ26VFPQ3R64EKB7EGYC2P';
         
         const boardElement = document.getElementById('board');
         const statusElement = document.getElementById('status');
@@ -240,24 +235,6 @@
         let currentPlayer = 'red';
         let isAITurn = false; // Biến cờ kiểm soát lượt AI
         
-        // ----------------------------------------------------
-        // (SỬA 1) Khởi tạo Pi SDK
-        // ----------------------------------------------------
-        try {
-            // Đặt sandbox: false khi bạn đã sẵn sàng chạy thật (Mainnet)
-            Pi.init({ version: "2.0", sandbox: true }); 
-            console.log("Pi SDK đã khởi tạo.");
-        } catch (err) {
-            console.error("Không thể khởi tạo Pi SDK. Bạn có đang ở Pi Browser?", err);
-            // Vô hiệu hóa nút donate nếu SDK không chạy
-            if (donateButton) {
-                donateButton.disabled = true;
-                donateButton.textContent = "Không có Pi SDK";
-                donateButton.classList.add("opacity-50", "cursor-not-allowed");
-                donateButton.classList.remove("hover:bg-green-600");
-            }
-        }
-
         // ----------------------------------------------------
         // Hàm Utility
         // ----------------------------------------------------
@@ -313,11 +290,8 @@
         }
 
         // ----------------------------------------------------
-        // Logic Kiểm tra Luật Cờ (Giữ nguyên)
+        // Logic Kiểm tra Luật Cờ
         // ----------------------------------------------------
-
-        // ... (Toàn bộ logic cờ tướng của bạn được giữ nguyên) ...
-        // ... (isInPalace, isPastRiver, checkLine, checkCannonLine, getValidMoves) ...
 
         // Kiểm tra xem vị trí có nằm trong Cung (Palace) hay không
         const isInPalace = (row, col, color) => {
@@ -507,10 +481,8 @@
         };
         
         // ----------------------------------------------------
-        // Logic AI Đen (Máy tính) (Giữ nguyên)
+        // Logic AI Đen (Máy tính)
         // ----------------------------------------------------
-
-        // ... (Toàn bộ logic AI của bạn được giữ nguyên) ...
 
         const aiMove = () => {
             if (currentPlayer !== 'black') return;
@@ -572,13 +544,93 @@
             switchTurn();
         };
 
+
         // ----------------------------------------------------
-        // (SỬA 2) Logic Thanh toán Pi Network (ĐÃ THAY THẾ)
+        // Logic Thanh toán Pi Network (Thực tế với Pi SDK)
         // ----------------------------------------------------
 
-   const initiatePiPayment = () => { // Vô hiệu hóa nút để tránh click đúp donateButton.disabled = true; donateButton.textContent = "Đang xử lý..."; // Các phạm vi (scopes) ta cần. 'payments' là bắt buộc. const scopes = ['payments']; // 1. Xác thực người dùng Pi.authenticate(scopes) .then(auth => { console.log("Xác thực thành công:", auth); // 2. Sau khi xác thực, gọi yêu cầu thanh toán createPayment(auth.user.uid); }) .catch(error => { console.error("Xác thực thất bại:", error); displayMessage('Lỗi Xác thực Pi', 'Không thể xác thực. Bạn đã từ chối quyền truy cập hoặc có lỗi xảy ra.'); // Kích hoạt lại nút donateButton.disabled = false; donateButton.textContent = "Ủng hộ 1 Pi"; }); }; // Hàm riêng để tạo thanh toán, gọi sau khi xác thực const createPayment = (userUid) => { const paymentData = { amount: 1, // Số Pi yêu cầu memo: 'Ủng hộ game Cờ Tướng', // Ghi chú cho người dùng metadata: { // Metadata này dành cho MÁY CHỦ của bạn (nếu có) // Ví dụ: lưu lại uid của người ủng hộ donatedBy: userUid, game: 'CoTuong' } }; const callbacks = { // Xử lý khi giao dịch được gửi lên blockchain onSuccess: (payment) => { console.log("Thanh toán thành công!", payment); displayMessage('Cảm ơn bạn!', <p>Đã nhận được 1 Pi ủng hộ!</p> <p class="text-xs mt-2">Mã giao dịch (TxID):</p> <code class="break-all font-mono text-xs font-semibold text-green-700 p-1 bg-gray-100 rounded-md inline-block mt-1">${payment.txid || 'N/A'}</code> ); // Kích hoạt lại nút donateButton.disabled = false; donateButton.textContent = "Ủng hộ 1 Pi"; }, // Xử lý khi có lỗi xảy ra onError: (error) => { console.error("Thanh toán thất bại:", error); let errorMessage = 'Giao dịch thất bại. Vui lòng thử lại.'; if (error && error.code === 'USER_CANCELLED') { errorMessage = 'Bạn đã hủy giao dịch.'; } else if (error && error.code === 'INSUFFICIENT_FUNDS') { errorMessage = 'Tài khoản không đủ số dư.'; } displayMessage('Thanh toán Lỗi', errorMessage); // Kích hoạt lại nút donateButton.disabled = false; donateButton.textContent = "Ủng hộ 1 Pi"; }, // Xử lý khi người dùng hủy cửa sổ thanh toán onCancel: () => { console.log("Thanh toán bị hủy."); displayMessage('Đã hủy', 'Bạn đã đóng cửa sổ thanh toán.'); // Kích hoạt lại nút donateButton.disabled = false; donateButton.textContent = "Ủng hộ 1 Pi"; } }; // 3. Gọi hàm Pi.payments.request try { Pi.payments.request(paymentData, callbacks); } catch (err) { console.error("Lỗi khi gọi Pi.payments.request:", err); displayMessage('Lỗi SDK', 'Không thể gọi hàm thanh toán. Lỗi: ' + err.message); // Kích hoạt lại nút donateButton.disabled = false; donateButton.textContent = "Ủng hộ 1 Pi"; } };
+        const initiatePiPayment = () => {
+            // Kiểm tra xem Pi SDK đã tải chưa và có sẵn không
+            if (typeof Pi === 'undefined') {
+                displayMessage('Lỗi hệ thống', '<p class="text-red-600 font-bold">Không tìm thấy Pi SDK. Chức năng thanh toán chỉ hoạt động khi ứng dụng được chạy trong Pi Browser.</p>');
+                return;
+            }
+
+            const amount = 1.0;
+            const memo = 'Ủng hộ 1 Pi cho game Cờ Tướng 2D';
+
+            // Cấu hình giao dịch với các hàm callback chi tiết
+            const paymentConfig = {
+                amount: amount,
+                memo: memo,
+                // Metadata: Dữ liệu tùy chỉnh mà nhà phát triển ứng dụng sử dụng
+                metadata: { 
+                    app_purpose: 'donation', 
+                    receiver_address: PI_WALLET_ADDRESS 
+                },
+                
+                // Hàm callback: Xử lý các giao dịch đang chờ xử lý
+                onIncompletePaymentFound: (payment) => {
+                    displayMessage(
+                        'Thanh toán chưa hoàn tất', 
+                        `<p>Tìm thấy giao dịch đang chờ xử lý (ID: ${payment.identifier}). Vui lòng hoàn tất hoặc hủy bỏ trong Pi Browser.</p>`
+                    );
+                    // Trong ứng dụng thực tế: bạn sẽ cần thêm logic để gọi Pi.payments.complete/cancel
+                },
+                
+                // Hàm callback: Giao dịch hoàn tất thành công
+                onPaymentCompleted: (payment) => {
+                    const txid = payment.transaction ? (payment.transaction.txid || 'N/A') : 'N/A';
+                    displayMessage(
+                        'Thanh toán thành công!', 
+                        `<p class="text-green-600 font-bold">Bạn đã ủng hộ thành công ${payment.amount} Pi!</p>
+                        <p>ID Thanh toán (Payment ID): ${payment.identifier}</p>
+                        <p>ID Giao dịch (Tx ID): <code class="break-all text-xs font-mono">${txid}</code></p>
+                        <p class="mt-2 text-sm italic">Cảm ơn sự ủng hộ của bạn!</p>`
+                    );
+                },
+                
+                // Hàm callback: Giao dịch bị người dùng hủy
+                onPaymentCanceled: (payment) => {
+                    displayMessage(
+                        'Đã hủy', 
+                        'Giao dịch đã bị bạn hủy bỏ.'
+                    );
+                },
+                
+                // Hàm callback: Có lỗi xảy ra trong quá trình thanh toán
+                onPaymentError: (error, payment) => {
+                    const errorMessage = error.message || 'Lỗi không xác định.';
+                    displayMessage(
+                        'Lỗi Thanh toán Pi', 
+                        `<p class="text-red-600 font-bold">Giao dịch thất bại.</p>
+                        <p>Mã lỗi: ${error.name || 'N/A'}</p>
+                        <p>Chi tiết: ${errorMessage}</p>`
+                    );
+                }
+            };
+            
+            try {
+                // Hiển thị thông báo chờ trước khi gọi SDK
+                displayMessage('Đang chờ...', 'Đang yêu cầu thanh toán 1 Pi. Vui lòng xem và xác nhận trong Pi Browser.');
+                
+                // Gửi yêu cầu thanh toán
+                Pi.payments.request(paymentConfig);
+                
+            } catch (error) {
+                // Xử lý lỗi nếu việc gọi Pi.payments.request bị lỗi trước khi giao diện mở ra
+                displayMessage(
+                    'Lỗi hệ thống', 
+                    `<p class="text-red-600 font-bold">Không thể khởi tạo yêu cầu thanh toán.</p>
+                    <p>Lỗi: ${error.message}</p>
+                    <p class="mt-2 text-sm italic">Hãy đảm bảo Pi SDK đã được tải đúng cách.</p>`
+                );
+            }
+        };
+
+
         // ----------------------------------------------------
-        // Xử lý Giao diện và Sự kiện (Giữ nguyên)
+        // Xử lý Giao diện và Sự kiện
         // ----------------------------------------------------
 
         // Hàm vẽ lại toàn bộ bàn cờ
@@ -717,4 +769,3 @@
     </script>
 </body>
 </html>
-
