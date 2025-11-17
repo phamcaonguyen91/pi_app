@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cờ Tướng 2D - Mobile Friendly</title>
-    <!-- Tải Tailwind CSS để đơn giản hóa việc tạo giao diện hiện đại và responsive -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
         /* Thiết lập font cho các quân cờ bằng Unicode/Emoji, đảm bảo hiển thị đẹp và sắc nét */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -155,6 +155,23 @@
             opacity: 1;
             visibility: visible;
         }
+        /* Style cho địa chỉ ví có thể copy */
+        .wallet-address-copy {
+            cursor: pointer;
+            position: relative;
+        }
+        .wallet-address-copy:hover .copy-icon {
+            opacity: 1;
+        }
+        .copy-icon {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -165,11 +182,9 @@
         </div>
 
         <div class="board" id="board">
-            <!-- Sông (River) -->
             <div class="river"><span class="river-text">Sông Hà</span></div>
             
-            <!-- Các ô cờ sẽ được thêm bằng JavaScript -->
-        </div>
+            </div>
 
         <div class="mt-4 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 w-full">
             <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
@@ -180,11 +195,11 @@
             </button>
         </div>
         
-        <!-- Modal Thông báo (Thay thế cho alert()) -->
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div class="bg-white p-6 rounded-xl shadow-2xl max-w-xs w-full">
                 <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800">Thông báo</h3>
                 <div id="modal-content" class="text-gray-700 mb-4 text-sm break-words overflow-y-auto max-h-64"></div>
+                <button id="modal-custom-action" class="hidden w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mb-3"></button>
                 <button id="modal-close" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">Đóng</button>
             </div>
         </div>
@@ -195,6 +210,7 @@
         // Cấu hình & Khởi tạo
         // ----------------------------------------------------
         
+        // **ĐỊA CHỈ VÍ CỦA BẠN (SỬA LẠI ĐỊA CHỈ NÀY)**
         const PI_WALLET_ADDRESS = 'GBML46SIXNWSYMDJNHPA5CJ4LT65EBJF66HZ26VFPQ3R64EKB7EGYC2P';
         
         const boardElement = document.getElementById('board');
@@ -206,6 +222,7 @@
         const modalTitleElement = document.getElementById('modal-title');
         const modalContentElement = document.getElementById('modal-content');
         const modalCloseButton = document.getElementById('modal-close');
+        const modalCustomButton = document.getElementById('modal-custom-action'); 
         
         const BOARD_SIZE = 90; // 9 cột x 10 hàng
         
@@ -242,12 +259,52 @@
         // Hàm Utility
         // ----------------------------------------------------
         
+        // Hàm copy văn bản
+        const copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text).then(() => {
+                // Hiển thị thông báo nhỏ trên nút tùy chỉnh
+                const targetButton = modalCustomButton.classList.contains('hidden') ? modalCloseButton : modalCustomButton;
+                const originalContent = targetButton.textContent;
+
+                targetButton.textContent = 'Đã sao chép! ✅';
+                targetButton.classList.remove('bg-indigo-500', 'bg-blue-500');
+                targetButton.classList.add('bg-green-600');
+                
+                setTimeout(() => {
+                    targetButton.textContent = originalContent;
+                    targetButton.classList.remove('bg-green-600');
+                    if (targetButton === modalCustomButton) {
+                        targetButton.classList.add('bg-indigo-500');
+                    } else {
+                        targetButton.classList.add('bg-blue-500');
+                    }
+                }, 1500);
+            }).catch(err => {
+                console.error('Không thể sao chép', err);
+            });
+        };
+
         // Hiển thị thông báo bằng Modal tùy chỉnh (thay thế cho alert)
-        const displayMessage = (title, content) => {
+        const displayMessage = (title, content, customButton) => {
             modalTitleElement.textContent = title;
             modalContentElement.innerHTML = content;
             modalElement.classList.add('active');
             modalElement.style.display = 'flex';
+            
+            // Xóa sự kiện cũ
+            modalCustomButton.onclick = null; 
+            modalCustomButton.classList.add('hidden');
+
+            if (customButton) {
+                modalCustomButton.textContent = customButton.text;
+                modalCustomButton.onclick = customButton.action;
+                modalCustomButton.classList.remove('hidden');
+                modalCustomButton.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
+                modalCustomButton.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            } else {
+                modalCloseButton.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                modalCloseButton.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
+            }
         };
 
         modalCloseButton.addEventListener('click', () => {
@@ -365,7 +422,6 @@
             }
         };
 
-
         // Tìm tất cả các nước đi hợp lệ cho quân cờ (chưa bao gồm luật chiếu tướng)
         const getValidMoves = (piece) => {
             const { row: startR, col: startC } = toCoords(piece.pos);
@@ -482,50 +538,69 @@
 
             return moves;
         };
-        
+
         // ----------------------------------------------------
-        // Logic AI Đen (Máy tính)
+        // Logic AI Đen (Máy tính) - Đã Cải Tiến
         // ----------------------------------------------------
 
         const aiMove = () => {
             if (currentPlayer !== 'black') return;
 
-            isAITurn = true; // Khóa tương tác của người chơi
+            isAITurn = true; 
             
-            // 1. Thu thập tất cả nước đi hợp lệ của phe Đen
+            // 1. Thu thập tất cả nước đi hợp lệ và phân loại
             let allLegalMoves = [];
+            let capturingMoves = []; 
+            let generalCaptureMoves = []; // Nước đi bắt Tướng (thắng ngay)
+
             const blackPieces = boardState.filter(p => p.color === 'black');
 
             for (const piece of blackPieces) {
                 const moves = getValidMoves(piece);
                 if (moves.length > 0) {
                     moves.forEach(move => {
-                        allLegalMoves.push({ piece, targetPos: move });
+                        const moveData = { piece, targetPos: move };
+                        allLegalMoves.push(moveData);
+                        
+                        const targetPiece = getPieceAt(move);
+                        if (targetPiece) {
+                            if (targetPiece.piece === 'Tướng') {
+                                generalCaptureMoves.push(moveData); // Nước đi bắt Tướng
+                            }
+                            capturingMoves.push(moveData); // Nước đi bắt quân nói chung
+                        }
                     });
                 }
             }
             
-            // 2. Nếu không có nước đi, hòa hoặc thua
-            if (allLegalMoves.length === 0) {
+            // 2. Chọn bộ nước đi theo ưu tiên
+            let moveSet = [];
+            if (generalCaptureMoves.length > 0) {
+                moveSet = generalCaptureMoves; // Ưu tiên 1: Thắng ngay (Bắt Tướng)
+            } else if (capturingMoves.length > 0) {
+                moveSet = capturingMoves; // Ưu tiên 2: Bắt quân khác
+            } else {
+                moveSet = allLegalMoves; // Ưu tiên 3: Đi ngẫu nhiên
+            }
+            
+            if (moveSet.length === 0) {
                 updateStatus('Hòa cờ. Máy tính không còn nước đi.', 'bg-yellow-200 text-yellow-800');
                 isAITurn = false;
-                selectedPiece = true; // Khóa game
+                selectedPiece = true; 
                 return;
             }
 
-            // 3. Chọn ngẫu nhiên một nước đi
-            const randomIndex = Math.floor(Math.random() * allLegalMoves.length);
-            const { piece: pieceToMove, targetPos } = allLegalMoves[randomIndex];
+            // 3. Chọn ngẫu nhiên một nước đi từ bộ ưu tiên
+            const randomIndex = Math.floor(Math.random() * moveSet.length);
+            const { piece: pieceToMove, targetPos } = moveSet[randomIndex];
 
             // 4. Thực hiện nước đi
-            
-            // Kiểm tra và loại bỏ quân bị ăn (nếu có)
             const capturedPiece = getPieceAt(targetPos);
             
             // Nếu ăn được Tướng, AI thắng
             if (capturedPiece && capturedPiece.piece === 'Tướng') {
-                boardState = boardState.filter(p => p.pos !== targetPos); // Loại bỏ Tướng
-                pieceToMove.pos = targetPos; // Di chuyển quân AI
+                boardState = boardState.filter(p => p.pos !== targetPos); 
+                pieceToMove.pos = targetPos; 
                 boardState = boardState.filter(p => p !== pieceToMove);
                 boardState.push(pieceToMove);
 
@@ -540,7 +615,6 @@
             pieceToMove.pos = targetPos;
             boardState.push(pieceToMove);
 
-            // 5. Kết thúc lượt AI và chuyển sang người chơi
             isAITurn = false;
             selectedPiece = null;
             renderBoard();
@@ -549,30 +623,58 @@
 
 
         // ----------------------------------------------------
-        // Logic Thanh toán Pi Network (Mô phỏng)
+        // Logic Ủng hộ (Chuyển sang Ví Pi)
         // ----------------------------------------------------
 
         const initiatePiPayment = () => {
-            // Đây là phần code mô phỏng việc gọi Pi SDK.
-            // Để thực hiện giao dịch Pi thực tế, ứng dụng phải được chạy trong Pi Browser.
-            
             const content = `
-                <p>Địa chỉ ví nhận ủng hộ:</p>
-                <code class="break-all font-mono text-xs font-semibold text-green-700 p-1 bg-gray-100 rounded-md inline-block mt-1">${PI_WALLET_ADDRESS}</code>
-                <p class="mt-4">Để hoàn tất giao dịch <span class="font-bold text-red-500">1 Pi</span>, bạn cần gọi hàm Pi SDK:</p>
-                <pre class="bg-gray-100 p-2 rounded-lg text-xs overflow-x-auto mt-2">
-Pi.payments.request({
-    amount: 1,
-    memo: 'Ủng hộ game Cờ Tướng',
-    metadata: { receiver_address: '${PI_WALLET_ADDRESS}' }
-});
-                </pre>
-                <p class="mt-2 text-sm italic text-gray-500">
-                    Chức năng này chỉ hoạt động khi chạy trong Pi Browser.
+                <p class="mb-3">
+                    Để ủng hộ <b>1 Pi</b>, vui lòng thực hiện thủ công các bước sau:
                 </p>
-            `;
+                <ol class="list-decimal list-inside space-y-2 text-left px-2">
+                    <li>Nhấn vào địa chỉ ví để <b>sao chép</b>.</li>
+                    <li>Mở Pi Wallet và dán địa chỉ đã sao chép.</li>
+                    <li>Nhập số lượng: <b>1 Pi</b>.</li>
+                    <li>Nhập Ghi chú (Memo): <b>Ủng hộ game Cờ Tướng</b> (Tùy chọn).</li>
+                </ol>
 
-            displayMessage('Mô phỏng Thanh toán Pi Network', content);
+                <p class="mt-4 mb-2 text-sm font-semibold">
+                    Địa chỉ Ví nhận Pi (Nhấp để Sao chép):
+                </p>
+                <div id="wallet-copy-area" 
+                     class="wallet-address-copy bg-gray-100 p-3 rounded-lg text-xs font-mono break-all font-semibold text-green-700 hover:bg-gray-200 transition duration-150">
+                    ${PI_WALLET_ADDRESS}
+                    <span class="copy-icon">📋</span>
+                </div>
+            `;
+            
+            const customButton = {
+                text: 'Mở Pi Wallet (wallet.pinet.com)',
+                action: () => {
+                    // Chuyển hướng đến Pi Wallet
+                    window.open('https://wallet.pinet.com/', '_blank');
+                    // Tự động đóng modal
+                    modalCloseButton.click(); 
+                }
+            };
+
+            // Hiển thị modal hướng dẫn và nút Mở Ví
+            displayMessage('Ủng hộ Nhà phát triển', content, customButton);
+            
+            // Gắn sự kiện copy sau khi modal được hiển thị 
+            setTimeout(() => {
+                const copyArea = document.getElementById('wallet-copy-area');
+                if (copyArea) {
+                    copyArea.onclick = () => {
+                        copyToClipboard(PI_WALLET_ADDRESS);
+                        // Cập nhật biểu tượng/nội dung nhỏ khi copy thành công
+                        copyArea.querySelector('.copy-icon').textContent = '✅';
+                        setTimeout(() => {
+                            copyArea.querySelector('.copy-icon').textContent = '📋';
+                        }, 1500);
+                    };
+                }
+            }, 100); 
         };
 
 
@@ -590,13 +692,11 @@ Pi.payments.request({
                 const square = document.createElement('div');
                 square.className = 'square';
                 square.dataset.pos = i;
-                // Sử dụng cả 'click' và 'touchend' để tối ưu hóa cho mobile touch
                 square.addEventListener('click', handleSquareClick);
                 
                 const pieceData = getPieceAt(i);
                 if (pieceData) {
                     const pieceElement = document.createElement('div');
-                    // Lấy ký tự Unicode/Emoji tương ứng
                     const pieceName = pieceData.color === 'red' 
                         ? PIECE_NAMES.red[pieceData.piece] 
                         : PIECE_NAMES[pieceData.piece];
@@ -616,7 +716,6 @@ Pi.payments.request({
                 boardElement.appendChild(square);
             }
 
-            // Highlight các nước đi hợp lệ nếu có quân đang được chọn
             if (selectedPiece && !isAITurn) {
                 const validMoves = getValidMoves(selectedPiece);
                 validMoves.forEach(pos => {
@@ -627,49 +726,44 @@ Pi.payments.request({
                 });
             }
             
-            // Đảm bảo Sông luôn ở trên cùng
             const river = boardElement.querySelector('.river');
             if (river) boardElement.appendChild(river);
         };
 
         // Xử lý khi click vào ô cờ
         const handleSquareClick = (event) => {
-            // Ngăn chặn người chơi click khi không phải lượt hoặc AI đang đi
             if (currentPlayer !== 'red' || isAITurn || selectedPiece === true) return;
             
-            // Lấy vị trí ô cờ được click (ngay cả khi click vào quân cờ)
             const squareElement = event.currentTarget;
             const pos = parseInt(squareElement.dataset.pos);
             const pieceAtPos = getPieceAt(pos);
 
-            // 1. CHƯA CÓ QUÂN NÀO ĐƯỢC CHỌN (BẮT ĐẦU CHỌN)
+            // 1. Nếu chưa có quân nào được chọn
             if (!selectedPiece) {
                 if (pieceAtPos && pieceAtPos.color === currentPlayer) {
                     selectedPiece = pieceAtPos;
-                    renderBoard(); // Vẽ lại để highlight quân cờ và các nước đi
+                    renderBoard(); 
                 }
                 return;
             }
 
-            // 2. ĐÃ CÓ QUÂN ĐƯỢC CHỌN
             const validMoves = getValidMoves(selectedPiece);
             
-            // 2a. Click vào cùng quân đã chọn hoặc quân khác cùng màu
+            // 2. Nếu đã chọn quân, nhưng click vào quân cùng màu
             if (pieceAtPos && pieceAtPos.color === currentPlayer) {
-                selectedPiece = pieceAtPos; // Đổi quân được chọn
+                selectedPiece = pieceAtPos; 
                 renderBoard();
                 return;
             }
 
-            // 2b. Click vào ô hợp lệ để di chuyển/ăn quân
+            // 3. Nếu click vào ô hợp lệ (di chuyển hoặc ăn)
             if (validMoves.includes(pos)) {
-                // Kiểm tra nếu ăn được Tướng, kết thúc game (Người chơi thắng)
+                
+                // Nếu ăn Tướng, người chơi thắng ngay
                 if (pieceAtPos && pieceAtPos.piece === 'Tướng') {
-                    // Di chuyển/ăn Tướng
-                    boardState = boardState.filter(p => p.pos !== pos); // Loại bỏ Tướng
+                    boardState = boardState.filter(p => p.pos !== pos); 
                     selectedPiece.pos = pos;
                     
-                    // Cập nhật lại boardState: loại bỏ quân cũ và thêm quân mới đã di chuyển
                     boardState = boardState.filter(p => p !== selectedPiece);
                     boardState.push(selectedPiece);
                     
