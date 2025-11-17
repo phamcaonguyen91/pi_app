@@ -140,8 +140,10 @@
             z-index: 20;
         }
 
+        /* FIX LỖI CO GIÃN Ô CỜ: Dùng outline thay cho border */
         .highlight-move {
-            border: 4px dashed #27ae60;
+            outline: 4px dashed #27ae60;
+            outline-offset: -2px; /* Dịch vào trong 2px để viền đẹp hơn */
             background-color: rgba(39, 174, 96, 0.2);
         }
         
@@ -217,8 +219,7 @@
         const statusElement = document.getElementById('status');
         const resetButton = document.getElementById('reset-button');
         const donateButton = document.getElementById('donate-button');
-        // Đã loại bỏ languageSelect và difficultySelect khỏi biến
-
+        
         const modalElement = document.getElementById('message-modal');
         const modalTitleElement = document.getElementById('modal-title');
         const modalContentElement = document.getElementById('modal-content');
@@ -406,7 +407,6 @@
             document.title = t('gameTitle');
         };
 
-        // ... (INITIAL_BOARD, PIECE_NAMES, PIECE_VALUES, copyToClipboard, toCoords, toPos, getPieceAt, updateStatus, showWinMessage, switchTurn - GIỮ NGUYÊN) ...
         const INITIAL_BOARD = [
             // Đen (Top)
             { piece: 'Xe', color: 'black', pos: 0 }, { piece: 'Mã', color: 'black', pos: 1 }, { piece: 'Tượng', color: 'black', pos: 2 }, { piece: 'Sĩ', color: 'black', pos: 3 }, { piece: 'Tướng', color: 'black', pos: 4 }, { piece: 'Sĩ', color: 'black', pos: 5 }, { piece: 'Tượng', color: 'black', pos: 6 }, { piece: 'Mã', color: 'black', pos: 7 }, { piece: 'Xe', color: 'black', pos: 8 },
@@ -532,7 +532,7 @@
         }
 
         // ----------------------------------------------------
-        // Logic Kiểm tra Luật Cờ (Giữ nguyên)
+        // Logic Kiểm tra Luật Cờ 
         // ----------------------------------------------------
 
         const isInPalace = (row, col, color) => {
@@ -710,7 +710,7 @@
         };
 
         // ----------------------------------------------------
-        // Logic AI Cấp Độ Khó (Giữ nguyên)
+        // Logic AI Cấp Độ Khó 
         // ----------------------------------------------------
 
         // Hàm mô phỏng nước đi và tạo ra trạng thái bàn cờ mới (Immutable)
@@ -1033,7 +1033,7 @@
         };
 
         // ----------------------------------------------------
-        // Xử lý Giao diện và Sự kiện (Giữ nguyên)
+        // Xử lý Giao diện và Sự kiện 
         // ----------------------------------------------------
 
         const renderBoard = () => {
