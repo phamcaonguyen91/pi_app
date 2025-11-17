@@ -177,18 +177,6 @@
 <body>
     <div class="chess-container">
         
-        <div class="flex justify-between w-full mb-3 space-x-2">
-            <select id="language-select" class="p-1 border border-gray-300 rounded text-sm bg-white shadow-sm">
-                <option value="vi">🇻🇳 Tiếng Việt</option>
-                <option value="en">🇺🇸 English</option>
-                <option value="zh">🇨🇳 中文 (Simplified)</option>
-            </select>
-            <select id="difficulty-select" class="p-1 border border-gray-300 rounded text-sm bg-white shadow-sm w-1/2">
-                <option value="easy" data-i18n="diffEasy"></option>
-                <option value="medium" data-i18n="diffMedium"></option>
-                <option value="hard" data-i18n="diffHard"></option>
-            </select>
-        </div>
         <div class="text-center mb-4">
             <h1 class="text-xl sm:text-2xl font-bold text-gray-800" data-i18n="gameTitle">Cờ Tướng 2D</h1>
             <p id="status" class="text-sm sm:text-lg font-semibold mt-2 rounded-lg py-1 px-3 inline-block bg-yellow-100 text-yellow-700 shadow-md"></p>
@@ -229,8 +217,7 @@
         const statusElement = document.getElementById('status');
         const resetButton = document.getElementById('reset-button');
         const donateButton = document.getElementById('donate-button');
-        const languageSelect = document.getElementById('language-select');
-        const difficultySelect = document.getElementById('difficulty-select'); // NEW
+        // Đã loại bỏ languageSelect và difficultySelect khỏi biến
 
         const modalElement = document.getElementById('message-modal');
         const modalTitleElement = document.getElementById('modal-title');
@@ -240,7 +227,7 @@
         
         const BOARD_SIZE = 90; // 9 cột x 10 hàng
 
-        // Dữ liệu ngôn ngữ (ĐÃ CẬP NHẬT)
+        // Dữ liệu ngôn ngữ
         const translations = {
             'vi': {
                 gameTitle: 'Cờ Tướng 2D',
@@ -249,8 +236,12 @@
                 donateButton: 'Ủng hộ 1 Pi',
                 modalTitle: 'Thông báo',
                 closeButton: 'Đóng',
-                restartConfirm: 'Bạn có muốn khởi động lại trò chơi với cấp độ mới?', // NEW
-                // Cấp độ khó (NEW)
+                restartConfirm: 'Bạn có muốn khởi động lại trò chơi với cấp độ mới?', 
+                // Thêm cho Startup Modal
+                startupTitle: 'Chọn Cấu hình Trò chơi',
+                startGameButton: 'Bắt Đầu Chơi',
+                diffLevel: 'Độ khó AI:',
+                // Cấp độ khó
                 diffEasy: 'Dễ',
                 diffMedium: 'Trung bình',
                 diffHard: 'Khó',
@@ -292,8 +283,12 @@
                 donateButton: 'Donate 1 Pi',
                 modalTitle: 'Notification',
                 closeButton: 'Close',
-                restartConfirm: 'Do you want to restart the game with the new difficulty?', // NEW
-                // Difficulty Levels (NEW)
+                restartConfirm: 'Do you want to restart the game with the new difficulty?', 
+                // Add for Startup Modal
+                startupTitle: 'Select Game Configuration',
+                startGameButton: 'Start Game',
+                diffLevel: 'AI Difficulty:',
+                // Difficulty Levels
                 diffEasy: 'Easy',
                 diffMedium: 'Medium',
                 diffHard: 'Hard',
@@ -335,8 +330,12 @@
                 donateButton: '捐赠 1 Pi',
                 modalTitle: '通知',
                 closeButton: '关闭',
-                restartConfirm: '您想用新的难度重新开始游戏吗？', // NEW
-                // Difficulty Levels (NEW)
+                restartConfirm: '您想用新的难度重新开始游戏吗？', 
+                // Add for Startup Modal
+                startupTitle: '选择游戏配置',
+                startGameButton: '开始游戏',
+                diffLevel: 'AI 难度:',
+                // Difficulty Levels
                 diffEasy: '简单',
                 diffMedium: '中等',
                 diffHard: '困难',
@@ -373,12 +372,9 @@
             }
         };
 
-        // Biến ngôn ngữ và cấp độ khó hiện tại (ĐÃ CẬP NHẬT)
+        // Biến ngôn ngữ và cấp độ khó hiện tại
         let currentLang = localStorage.getItem('lang') || 'vi'; 
-        languageSelect.value = currentLang;
-        
-        let currentDifficulty = localStorage.getItem('difficulty') || 'medium'; // NEW difficulty state
-        difficultySelect.value = currentDifficulty;
+        let currentDifficulty = localStorage.getItem('difficulty') || 'medium'; 
 
         // Hàm dịch thuật
         const t = (key) => {
@@ -410,20 +406,7 @@
             document.title = t('gameTitle');
         };
 
-        // Gắn sự kiện thay đổi ngôn ngữ
-        languageSelect.addEventListener('change', (e) => {
-            applyLanguage(e.target.value);
-        });
-
-        // Gắn sự kiện thay đổi độ khó (NEW)
-        difficultySelect.addEventListener('change', (e) => {
-            currentDifficulty = e.target.value;
-            localStorage.setItem('difficulty', currentDifficulty);
-            if (confirm(t('restartConfirm'))) {
-                initializeGame();
-            }
-        });
-
+        // ... (INITIAL_BOARD, PIECE_NAMES, PIECE_VALUES, copyToClipboard, toCoords, toPos, getPieceAt, updateStatus, showWinMessage, switchTurn - GIỮ NGUYÊN) ...
         const INITIAL_BOARD = [
             // Đen (Top)
             { piece: 'Xe', color: 'black', pos: 0 }, { piece: 'Mã', color: 'black', pos: 1 }, { piece: 'Tượng', color: 'black', pos: 2 }, { piece: 'Sĩ', color: 'black', pos: 3 }, { piece: 'Tướng', color: 'black', pos: 4 }, { piece: 'Sĩ', color: 'black', pos: 5 }, { piece: 'Tượng', color: 'black', pos: 6 }, { piece: 'Mã', color: 'black', pos: 7 }, { piece: 'Xe', color: 'black', pos: 8 },
@@ -448,15 +431,15 @@
             'red': { 'Tướng': '帥', 'Sĩ': '仕', 'Tượng': '相', 'Xe': '俥', 'Mã': '傌', 'Pháo': '砲', 'Tốt': '兵' } 
         };
 
-        // NEW: Giá trị quân cờ (dùng cho thuật toán AI)
+        // Giá trị quân cờ (dùng cho thuật toán AI)
         const PIECE_VALUES = {
-            'Tướng': 100000, // Tướng có giá trị rất cao (gần như vô hạn)
+            'Tướng': 100000, 
             'Xe': 900, 
             'Pháo': 450,
             'Mã': 400,
             'Tượng': 200,
             'Sĩ': 200,
-            'Tốt': 100 // Tốt cơ bản
+            'Tốt': 100 
         };
         
         let boardState = [];
@@ -518,7 +501,7 @@
         // Chuyển đổi tọa độ (row, col) sang chỉ số 1D
         const toPos = (row, col) => row * 9 + col;
         
-        // Lấy quân cờ tại vị trí (ĐÃ CẬP NHẬT để hỗ trợ AI Simulation)
+        // Lấy quân cờ tại vị trí
         const getPieceAt = (pos, board = boardState) => board.find(p => p.pos === pos);
 
         // Cập nhật trạng thái trò chơi trên UI
@@ -549,7 +532,7 @@
         }
 
         // ----------------------------------------------------
-        // Logic Kiểm tra Luật Cờ (ĐÃ CẬP NHẬT để hỗ trợ AI Simulation)
+        // Logic Kiểm tra Luật Cờ (Giữ nguyên)
         // ----------------------------------------------------
 
         const isInPalace = (row, col, color) => {
@@ -577,7 +560,7 @@
                 const nextPos = toPos(nextR, nextC);
                 if (nextR < 0 || nextR >= 10 || nextC < 0 || nextC >= 9) break;
 
-                const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                const targetPiece = getPieceAt(nextPos, currentBoard); 
                 if (targetPiece) {
                     if (targetPiece.color === enemyColor) {
                         moves.push(nextPos); 
@@ -597,7 +580,7 @@
                 const nextPos = toPos(nextR, nextC);
                 if (nextR < 0 || nextR >= 10 || nextC < 0 || nextC >= 9) break;
 
-                const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                const targetPiece = getPieceAt(nextPos, currentBoard); 
                 
                 if (!targetPiece) {
                     if (!screenFound) {
@@ -616,7 +599,7 @@
             }
         };
 
-        // Tìm tất cả các nước đi hợp lệ cho quân cờ (ĐÃ CẬP NHẬT để hỗ trợ AI Simulation)
+        // Tìm tất cả các nước đi hợp lệ cho quân cờ
         const getValidMoves = (piece, currentBoard = boardState) => {
             const { row: startR, col: startC } = toCoords(piece.pos);
             const moves = [];
@@ -629,7 +612,7 @@
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                        const targetPiece = getPieceAt(nextPos, currentBoard); 
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && isInPalace(nextR, nextC, color)) {
                             if (!targetPiece || targetPiece.color === enemyColor) {
@@ -643,7 +626,7 @@
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                        const targetPiece = getPieceAt(nextPos, currentBoard); 
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && isInPalace(nextR, nextC, color)) {
                             if (!targetPiece || targetPiece.color === enemyColor) {
@@ -657,38 +640,38 @@
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                        const targetPiece = getPieceAt(nextPos, currentBoard); 
                         
                         const midR = startR + dr / 2;
                         const midC = startC + dc / 2;
                         const midPos = toPos(midR, midC);
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9 && (color === 'red' ? nextR >= 5 : nextR <= 4)) {
-                            if (!getPieceAt(midPos, currentBoard) && (!targetPiece || targetPiece.color === enemyColor)) { // Dùng currentBoard
+                            if (!getPieceAt(midPos, currentBoard) && (!targetPiece || targetPiece.color === enemyColor)) { 
                                 moves.push(nextPos);
                             }
                         }
                     });
                     break;
                 case 'Xe':
-                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkLine(dr, dc, moves, enemyColor, startR, startC, currentBoard)); // Dùng currentBoard
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkLine(dr, dc, moves, enemyColor, startR, startC, currentBoard)); 
                     break;
                 case 'Pháo':
-                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkCannonLine(dr, dc, moves, enemyColor, startR, startC, currentBoard)); // Dùng currentBoard
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dr, dc]) => checkCannonLine(dr, dc, moves, enemyColor, startR, startC, currentBoard)); 
                     break;
                 case 'Mã':
                     [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]].forEach(([dr, dc]) => {
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                        const targetPiece = getPieceAt(nextPos, currentBoard); 
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9) {
                             const midR = startR + (Math.abs(dr) > 1 ? Math.sign(dr) : 0);
                             const midC = startC + (Math.abs(dc) > 1 ? Math.sign(dc) : 0);
                             const midPos = toPos(midR, midC);
                             
-                            if (!getPieceAt(midPos, currentBoard) && (!targetPiece || targetPiece.color === enemyColor)) { // Dùng currentBoard
+                            if (!getPieceAt(midPos, currentBoard) && (!targetPiece || targetPiece.color === enemyColor)) { 
                                 moves.push(nextPos);
                             }
                         }
@@ -712,7 +695,7 @@
                         const nextR = startR + dr;
                         const nextC = startC + dc;
                         const nextPos = toPos(nextR, nextC);
-                        const targetPiece = getPieceAt(nextPos, currentBoard); // Dùng currentBoard
+                        const targetPiece = getPieceAt(nextPos, currentBoard); 
 
                         if (nextR >= 0 && nextR < 10 && nextC >= 0 && nextC < 9) {
                             if (!targetPiece || targetPiece.color === enemyColor) {
@@ -727,7 +710,7 @@
         };
 
         // ----------------------------------------------------
-        // Logic AI Cấp Độ Khó (NEW)
+        // Logic AI Cấp Độ Khó (Giữ nguyên)
         // ----------------------------------------------------
 
         // Hàm mô phỏng nước đi và tạo ra trạng thái bàn cờ mới (Immutable)
@@ -838,7 +821,7 @@
         };
 
         // ----------------------------------------------------
-        // Logic AI Đen (Máy tính) - ĐÃ CẬP NHẬT
+        // Logic AI Đen (Máy tính)
         // ----------------------------------------------------
 
         const aiMove = () => {
@@ -949,7 +932,108 @@
 
 
         // ----------------------------------------------------
-        // Xử lý Giao diện và Sự kiện
+        // Logic Khởi động & Reset Game
+        // ----------------------------------------------------
+
+        // Hàm Reset Game (Khởi tạo lại bàn cờ)
+        const resetGame = () => {
+            boardState = INITIAL_BOARD.map(p => ({ ...p }));
+            selectedPiece = null;
+            currentPlayer = 'red';
+            isAITurn = false;
+            
+            // Tải lại ngôn ngữ và trạng thái
+            applyLanguage(currentLang); 
+            updateStatus(t('statusRedTurn'), 'bg-red-100 text-red-700');
+            renderBoard();
+        };
+
+        // Hàm hiển thị Modal Khởi động
+        const showStartupModal = () => {
+            const langOptions = `
+                <label class="block text-sm font-medium text-gray-700 mb-1" id="lang-label">Ngôn ngữ:</label>
+                <select id="startup-language-select" class="p-2 border border-gray-300 rounded text-sm bg-white shadow-sm w-full mb-4">
+                    <option value="vi">🇻🇳 Tiếng Việt</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="zh">🇨🇳 中文 (Simplified)</option>
+                </select>
+            `;
+            
+            const diffOptions = `
+                <label class="block text-sm font-medium text-gray-700 mb-1" id="diff-label" data-i18n-startup-label="diffLevel">Độ khó AI:</label>
+                <select id="startup-difficulty-select" class="p-2 border border-gray-300 rounded text-sm bg-white shadow-sm w-full">
+                    <option value="easy" data-i18n-start="diffEasy">Dễ</option>
+                    <option value="medium" data-i18n-start="diffMedium">Trung bình</option>
+                    <option value="hard" data-i18n-start="diffHard">Khó</option>
+                </select>
+            `;
+
+            const content = `<div class="p-2">${langOptions}${diffOptions}</div>`;
+
+            // Hiển thị modal. Nút Đóng sẽ được thay bằng nút Bắt Đầu Chơi
+            displayMessage(t('startupTitle'), content, {
+                text: t('startGameButton'),
+                action: () => {
+                    const newLang = document.getElementById('startup-language-select').value;
+                    const newDifficulty = document.getElementById('startup-difficulty-select').value;
+
+                    currentLang = newLang;
+                    currentDifficulty = newDifficulty;
+                    localStorage.setItem('lang', newLang);
+                    localStorage.setItem('difficulty', newDifficulty);
+                    
+                    applyLanguage(currentLang); 
+                    resetGame(); 
+                    modalCloseButton.click();
+                }
+            });
+            
+            // Ẩn nút "Đóng" mặc định
+            modalCloseButton.classList.add('hidden');
+            
+            // Thiết lập giá trị ban đầu và dịch thuật trong modal
+            setTimeout(() => {
+                const langSelect = document.getElementById('startup-language-select');
+                const diffSelect = document.getElementById('startup-difficulty-select');
+                
+                // Sử dụng giá trị đã lưu
+                if (langSelect) langSelect.value = localStorage.getItem('lang') || 'vi';
+                if (diffSelect) diffSelect.value = localStorage.getItem('difficulty') || 'medium';
+
+                // Dịch nhãn và tùy chọn độ khó
+                document.getElementById('diff-label').textContent = t('diffLevel');
+                document.querySelectorAll('[data-i18n-start]').forEach(element => {
+                    const key = element.getAttribute('data-i18n-start');
+                    element.textContent = t(key);
+                });
+                
+            }, 50);
+        };
+
+        // Hàm khởi tạo game (điểm vào chính)
+        const initializeGame = () => {
+            // Tải ngôn ngữ và cấp độ khó ban đầu từ localStorage
+            currentLang = localStorage.getItem('lang') || 'vi'; 
+            currentDifficulty = localStorage.getItem('difficulty') || 'medium'; 
+            
+            // Áp dụng ngôn ngữ ban đầu để hiển thị UI và Modal
+            applyLanguage(currentLang);
+            
+            // Hiển thị modal trước khi game bắt đầu
+            showStartupModal(); 
+            
+            // Gắn sự kiện cho nút chơi lại (reset button)
+            resetButton.addEventListener('click', () => {
+                // Hiện lại modal cấu hình để người chơi có thể thay đổi độ khó/ngôn ngữ
+                showStartupModal();
+            });
+            
+            // Gắn sự kiện cho nút ủng hộ
+            donateButton.addEventListener('click', initiatePiPayment);
+        };
+
+        // ----------------------------------------------------
+        // Xử lý Giao diện và Sự kiện (Giữ nguyên)
         // ----------------------------------------------------
 
         const renderBoard = () => {
@@ -1034,7 +1118,7 @@
                     return;
                 }
 
-                boardState = boardState.filter(p => p.pos !== pos && p !== selectedPiece);
+                boardState = boardState.filter(p => p.pos !== pos && p.pos !== selectedPiece.pos);
                 selectedPiece.pos = pos;
                 boardState.push(selectedPiece);
                 
@@ -1047,22 +1131,6 @@
                 renderBoard();
             }
         };
-
-        // Khởi tạo trạng thái trò chơi
-        const initializeGame = () => {
-            boardState = INITIAL_BOARD.map(p => ({ ...p }));
-            selectedPiece = null;
-            currentPlayer = 'red';
-            isAITurn = false;
-            
-            // Tải lại ngôn ngữ và cấp độ khó
-            applyLanguage(currentLang);
-            updateStatus(t('statusRedTurn'), 'bg-red-100 text-red-700');
-            renderBoard();
-        };
-
-        resetButton.addEventListener('click', initializeGame);
-        donateButton.addEventListener('click', initiatePiPayment);
 
         // Chạy lần đầu
         window.onload = initializeGame;
