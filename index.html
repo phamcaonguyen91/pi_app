@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cờ Tướng 2D - Mobile Friendly</title>
-    <!-- Tải Tailwind CSS để đơn giản hóa việc tạo giao diện hiện đại và responsive -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
@@ -166,11 +165,9 @@
         </div>
 
         <div class="board" id="board">
-            <!-- Sông (River) -->
             <div class="river"><span class="river-text">Sông Hà</span></div>
             
-            <!-- Các ô cờ sẽ được thêm bằng JavaScript -->
-        </div>
+            </div>
 
         <div class="mt-4 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 w-full">
             <button id="reset-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 text-base">
@@ -181,7 +178,6 @@
             </button>
         </div>
         
-        <!-- Modal Thông báo (Thay thế cho alert()) -->
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
             <div class="bg-white p-6 rounded-xl shadow-2xl max-w-xs w-full">
                 <h3 id="modal-title" class="text-xl font-bold mb-3 text-gray-800">Thông báo</h3>
@@ -196,7 +192,9 @@
         // Cấu hình & Khởi tạo
         // ----------------------------------------------------
         
-        const PI_WALLET_ADDRESS = 'GBML46SIXNWSYMDJNHPA5CJ4LT65EBJF66HZ26VFPQ3R64EKB7EGYC2P';
+        // Bạn không cần địa chỉ ví ở đây nữa, vì thanh toán sẽ
+        // tự động chuyển đến ví bạn đã thiết lập trong Pi Developer Portal.
+        // const PI_WALLET_ADDRESS = '...'; 
         
         const boardElement = document.getElementById('board');
         const statusElement = document.getElementById('status');
@@ -239,6 +237,24 @@
         let currentPlayer = 'red';
         let isAITurn = false; // Biến cờ kiểm soát lượt AI
         
+        // ----------------------------------------------------
+        // (SỬA 1) Khởi tạo Pi SDK
+        // ----------------------------------------------------
+        try {
+            // Đặt sandbox: false khi bạn đã sẵn sàng chạy thật (Mainnet)
+            Pi.init({ version: "2.0", sandbox: true }); 
+            console.log("Pi SDK đã khởi tạo.");
+        } catch (err) {
+            console.error("Không thể khởi tạo Pi SDK. Bạn có đang ở Pi Browser?", err);
+            // Vô hiệu hóa nút donate nếu SDK không chạy
+            if (donateButton) {
+                donateButton.disabled = true;
+                donateButton.textContent = "Không có Pi SDK";
+                donateButton.classList.add("opacity-50", "cursor-not-allowed");
+                donateButton.classList.remove("hover:bg-green-600");
+            }
+        }
+
         // ----------------------------------------------------
         // Hàm Utility
         // ----------------------------------------------------
@@ -294,8 +310,11 @@
         }
 
         // ----------------------------------------------------
-        // Logic Kiểm tra Luật Cờ
+        // Logic Kiểm tra Luật Cờ (Giữ nguyên)
         // ----------------------------------------------------
+
+        // ... (Toàn bộ logic cờ tướng của bạn được giữ nguyên) ...
+        // ... (isInPalace, isPastRiver, checkLine, checkCannonLine, getValidMoves) ...
 
         // Kiểm tra xem vị trí có nằm trong Cung (Palace) hay không
         const isInPalace = (row, col, color) => {
@@ -485,8 +504,10 @@
         };
         
         // ----------------------------------------------------
-        // Logic AI Đen (Máy tính)
+        // Logic AI Đen (Máy tính) (Giữ nguyên)
         // ----------------------------------------------------
+
+        // ... (Toàn bộ logic AI của bạn được giữ nguyên) ...
 
         const aiMove = () => {
             if (currentPlayer !== 'black') return;
@@ -548,37 +569,100 @@
             switchTurn();
         };
 
-
         // ----------------------------------------------------
-        // Logic Thanh toán Pi Network (Mô phỏng)
+        // (SỬA 2) Logic Thanh toán Pi Network (ĐÃ THAY THẾ)
         // ----------------------------------------------------
 
         const initiatePiPayment = () => {
-            // Đây là phần code mô phỏng việc gọi Pi SDK.
-            // Để thực hiện giao dịch Pi thực tế, ứng dụng phải được chạy trong Pi Browser.
+            // Vô hiệu hóa nút để tránh click đúp
+            donateButton.disabled = true;
+            donateButton.textContent = "Đang xử lý...";
             
-            const content = `
-                <p>Địa chỉ ví nhận ủng hộ:</p>
-                <code class="break-all font-mono text-xs font-semibold text-green-700 p-1 bg-gray-100 rounded-md inline-block mt-1">${PI_WALLET_ADDRESS}</code>
-                <p class="mt-4">Để hoàn tất giao dịch <span class="font-bold text-red-500">1 Pi</span>, bạn cần gọi hàm Pi SDK:</p>
-                <pre class="bg-gray-100 p-2 rounded-lg text-xs overflow-x-auto mt-2">
-Pi.payments.request({
-    amount: 1,
-    memo: 'Ủng hộ game Cờ Tướng',
-    metadata: { receiver_address: '${PI_WALLET_ADDRESS}' }
-});
-                </pre>
-                <p class="mt-2 text-sm italic text-gray-500">
-                    Chức năng này chỉ hoạt động khi chạy trong Pi Browser.
-                </p>
-            `;
+            // Các phạm vi (scopes) ta cần. 'payments' là bắt buộc.
+            const scopes = ['payments'];
 
-            displayMessage('Mô phỏng Thanh toán Pi Network', content);
+            // 1. Xác thực người dùng
+            Pi.authenticate(scopes)
+                .then(auth => {
+                    console.log("Xác thực thành công:", auth);
+                    // 2. Sau khi xác thực, gọi yêu cầu thanh toán
+                    createPayment(auth.user.uid);
+                })
+                .catch(error => {
+                    console.error("Xác thực thất bại:", error);
+                    displayMessage('Lỗi Xác thực Pi', 'Không thể xác thực. Bạn đã từ chối quyền truy cập hoặc có lỗi xảy ra.');
+                    // Kích hoạt lại nút
+                    donateButton.disabled = false;
+                    donateButton.textContent = "Ủng hộ 1 Pi";
+                });
+        };
+        
+        // Hàm riêng để tạo thanh toán, gọi sau khi xác thực
+        const createPayment = (userUid) => {
+            const paymentData = {
+                amount: 1, // Số Pi yêu cầu
+                memo: 'Ủng hộ game Cờ Tướng', // Ghi chú cho người dùng
+                metadata: { 
+                    // Metadata này dành cho MÁY CHỦ của bạn (nếu có)
+                    // Ví dụ: lưu lại uid của người ủng hộ
+                    donatedBy: userUid,
+                    game: 'CoTuong'
+                } 
+            };
+
+            const callbacks = {
+                // Xử lý khi giao dịch được gửi lên blockchain
+                onSuccess: (payment) => {
+                    console.log("Thanh toán thành công!", payment);
+                    displayMessage('Cảm ơn bạn!', 
+                        `<p>Đã nhận được 1 Pi ủng hộ!</p>
+                         <p class="text-xs mt-2">Mã giao dịch (TxID):</p>
+                         <code class="break-all font-mono text-xs font-semibold text-green-700 p-1 bg-gray-100 rounded-md inline-block mt-1">${payment.txid || 'N/A'}</code>`
+                    );
+                    // Kích hoạt lại nút
+                    donateButton.disabled = false;
+                    donateButton.textContent = "Ủng hộ 1 Pi";
+                },
+
+                // Xử lý khi có lỗi xảy ra
+                onError: (error) => {
+                    console.error("Thanh toán thất bại:", error);
+                    let errorMessage = 'Giao dịch thất bại. Vui lòng thử lại.';
+                    if (error && error.code === 'USER_CANCELLED') {
+                        errorMessage = 'Bạn đã hủy giao dịch.';
+                    } else if (error && error.code === 'INSUFFICIENT_FUNDS') {
+                        errorMessage = 'Tài khoản không đủ số dư.';
+                    }
+                    displayMessage('Thanh toán Lỗi', errorMessage);
+                    // Kích hoạt lại nút
+                    donateButton.disabled = false;
+                    donateButton.textContent = "Ủng hộ 1 Pi";
+                },
+
+                // Xử lý khi người dùng hủy cửa sổ thanh toán
+                onCancel: () => {
+                    console.log("Thanh toán bị hủy.");
+                    displayMessage('Đã hủy', 'Bạn đã đóng cửa sổ thanh toán.');
+                    // Kích hoạt lại nút
+                    donateButton.disabled = false;
+                    donateButton.textContent = "Ủng hộ 1 Pi";
+                }
+            };
+            
+            // 3. Gọi hàm Pi.payments.request
+            try {
+                Pi.payments.request(paymentData, callbacks);
+            } catch (err) {
+                console.error("Lỗi khi gọi Pi.payments.request:", err);
+                displayMessage('Lỗi SDK', 'Không thể gọi hàm thanh toán. Lỗi: ' + err.message);
+                // Kích hoạt lại nút
+                donateButton.disabled = false;
+                donateButton.textContent = "Ủng hộ 1 Pi";
+            }
         };
 
-
         // ----------------------------------------------------
-        // Xử lý Giao diện và Sự kiện
+        // Xử lý Giao diện và Sự kiện (Giữ nguyên)
         // ----------------------------------------------------
 
         // Hàm vẽ lại toàn bộ bàn cờ
@@ -717,4 +801,3 @@ Pi.payments.request({
     </script>
 </body>
 </html>
-
