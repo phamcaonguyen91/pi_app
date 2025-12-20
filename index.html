@@ -906,13 +906,24 @@
         const initiatePiPayment = () => {
             const content = t('donateContent')(PI_WALLET_ADDRESS);
             
-            const customButton = {
-                text: t('donateButtonAction'),
-                action: () => {
-                    window.open('https://wallet.pinet.com/', '_blank');
-                    modalCloseButton.click(); 
-                }
-            };
+           const customButton = {
+    text: t('donateButtonAction'),
+    action: () => {
+        // Đường dẫn Deep Link để mở thẳng vào Wallet trong Pi Browser
+        const piBrowserUrl = "pi://wallet.pi"; 
+        
+        // Cố gắng mở app Pi Browser
+        window.location.href = piBrowserUrl;
+
+        // Backup: Nếu sau 1 giây không thấy chuyển biến (do chưa cài app), 
+        // thì mới mở bản web thủ công
+        setTimeout(() => {
+            window.open('https://wallet.pinet.com/', '_blank');
+        }, 1000);
+
+        modalCloseButton.click(); 
+    }
+};
 
             displayMessage(t('donateTitle'), content, customButton);
             
@@ -1138,3 +1149,4 @@
     </script>
 </body>
 </html>
+
